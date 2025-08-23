@@ -7,6 +7,7 @@ const webhookProcessor = new ProcessHitPayWebhook();
 
 export async function POST(request: NextRequest) {
   try {
+    const rawBody = await request.text();
     console.log('=== RAW WEBHOOK DATA ===');
     console.log('Raw body:', rawBody);
     console.log('Content-Type:', request.headers.get('content-type'));
