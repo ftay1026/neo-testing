@@ -7,10 +7,18 @@ const webhookProcessor = new ProcessHitPayWebhook();
 
 export async function POST(request: NextRequest) {
   try {
-    const rawBody = await request.text();
+    console.log('=== RAW WEBHOOK DATA ===');
+    console.log('Raw body:', rawBody);
+    console.log('Content-Type:', request.headers.get('content-type'));
     
     // Parse the form data
     const params = new URLSearchParams(rawBody);
+    
+    console.log('=== ALL RECEIVED PARAMS ===');
+    for (const [key, value] of params.entries()) {
+      console.log(`${key}: "${value}"`);
+    }
+    
     const webhookData: HitPayWebhookData = {
       payment_id: params.get('payment_id') || '',
       payment_request_id: params.get('payment_request_id') || '',
