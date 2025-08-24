@@ -16,9 +16,9 @@ export class ProcessHitPayWebhook {
   async processPaymentEvent(eventData: HitPayWebhookData) {
     try {
       const supabase = await createClient();
-      
-      // Only process completed payments
-      if (eventData.status !== 'completed') {
+
+      // Only process succeeded payments
+      if (eventData.status !== 'succeeded') {
         console.log(`Payment ${eventData.payment_id} status: ${eventData.status}`);
         return;
       }
