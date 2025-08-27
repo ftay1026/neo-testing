@@ -100,10 +100,6 @@ export async function POST(request: Request) {
       chatSummary,
       parentChatId = null,
       initialChatTitle = null,
-      projectId,
-      chatSummary, // Extract chatSummary from request body
-      parentChatId = null, // Default to null if not provided
-      initialChatTitle = null, // Default to null if not provided
     }: {
       id: string;
       messages: Array<UIMessage>;
