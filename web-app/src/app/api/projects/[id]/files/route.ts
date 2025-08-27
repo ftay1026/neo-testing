@@ -33,7 +33,7 @@ export async function GET(
       .select('title, id, content, created_at, updated_at')
       .eq('project_id', projectId)
       .eq('is_direct_file', true)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: true });
 
     if (error) {
       console.error('Error fetching project files:', error);

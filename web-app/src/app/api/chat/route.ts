@@ -100,14 +100,18 @@ export async function POST(request: Request) {
       chatSummary,
       parentChatId = null,
       initialChatTitle = null,
+      projectId,
+      chatSummary, // Extract chatSummary from request body
+      parentChatId = null, // Default to null if not provided
+      initialChatTitle = null, // Default to null if not provided
     }: {
       id: string;
       messages: Array<UIMessage>;
       mode?: ModeType | null;
       projectId?: string | null;
-      chatSummary?: string | null;
-      parentChatId?: string | null;
-      initialChatTitle?: string | null;
+      chatSummary?: string | null; // Add chatSummary type
+      parentChatId?: string | null; // Add parentChatId type
+      initialChatTitle?: string | null; // Add chatTitle type
     } = await request.json();
 
     const supabase: SupabaseClient<Database> = await createClient();
@@ -171,6 +175,8 @@ export async function POST(request: Request) {
     // Check if chat exists and handle chat creation
     const existingChat = await getChatById(supabase, id);
     const isNewChat = !existingChat;
+    console.log('initial chat title available at the chat api', initialChatTitle);
+    console.log('parent chat id available at the chat api', parentChatId);
 
     if (isNewChat) {
       // Create chat with placeholder title - will be updated after first response

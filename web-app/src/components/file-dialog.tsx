@@ -54,7 +54,7 @@ export function FileDialog({
   const editor = useEditor({
     extensions: [StarterKit],
     content: initialContent || '',
-    immediatelyRender: false,
+    immediatelyRender: false, // Important for Next.js SSR
     editorProps: {
       attributes: {
         class: 'tiptap focus:outline-none min-h-[250px] sm:min-h-[300px] p-3',

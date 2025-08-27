@@ -35,10 +35,19 @@ export function ProjectChat({ projectId, projectName, className }: ProjectChatPr
 
     const chatId = generateUUID();
     
-    // Simple: Just navigate with the message in URL params
-    const encodedMessage = encodeURIComponent(input.trim());
-    setInput(''); // Clear input after submission
-    router.push(`/app/chat/${chatId}?projectId=${projectId}&initialMessage=${encodedMessage}&mode=${mode}`);
+    // Store message and mode in localStorage instead of URL parameters
+    try {
+      localStorage.setItem(`initial-message-${chatId}`, input.trim());
+      localStorage.setItem(`initial-mode-${chatId}`, mode);
+      
+      setInput(''); // Clear input after submission
+      
+      // Navigate with just the essential parameters
+      router.push(`/app/chat/${chatId}?projectId=${projectId}&hasInitialMessage=true`);
+    } catch (error) {
+      console.error('Error storing initial message:', error);
+      toast.error('Failed to start chat. Please try again.');
+    }
     
   }, [input, projectId, router, mode]);
 

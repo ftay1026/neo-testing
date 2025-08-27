@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     let webhookData: HitPayWebhookData;
 
     if (contentType?.includes('application/json')) {
-      // Handle JSON webhook
+      // Handle JSON webhook (what you're actually receiving)
       const jsonData: HitPayJsonWebhook = JSON.parse(rawBody);
       
       console.log('JSON webhook received:', {

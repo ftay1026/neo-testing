@@ -29,7 +29,7 @@ export default async function Page(props: {
   const { id } = params;
 
   // Check if this is a new chat from project page or inherit chat
-  const initialMessage = searchParams.initialMessage;
+  const hasInitialMessage = searchParams.hasInitialMessage === 'true';
   let parentChatId: string | null = typeof searchParams.parentChatId === 'string' ? searchParams.parentChatId : null; // Extract parentChatId from URL
   const isInheritChat = searchParams.inherit === 'true'; // Check inherit flag
   let projectId = typeof searchParams.projectId === 'string' ? searchParams.projectId : undefined;
@@ -41,12 +41,11 @@ export default async function Page(props: {
   let chatSummary: string | null = null;
   let parentChatTitle: string | null = null;
 
-  if (initialMessage && typeof initialMessage === 'string') {
-    // NEW CHAT: Create the user message
+  if (hasInitialMessage) {
+    // NEW CHAT: Retrieve the stored message from localStorage (client-side)
+    // Note: This will be handled client-side in the Chat component
+    // since localStorage is not available on the server
 
-    const decodedInitialMessage = decodeURIComponent(initialMessage);
-    let content = decodedInitialMessage;
-    const messageId = generateUUID();
     let newChatTitle = 'Untitled';
 
     // Generate summary if this is an inherit chat
@@ -61,11 +60,12 @@ export default async function Page(props: {
         return notFound();
       }
 
+      console.log('Generating summary for inherited chat from:', parentChatId);
       chatSummary = await generateChatSummary(parentChatId);
+      console.log('Generated summary length:', chatSummary?.length || 0);
 
       newChatTitle = `${parentChat.title} continued on ${new Date().toLocaleDateString()}`;
       parentChatTitle = parentChat.title;
-      content = `continue our previous conversation ${parentChat.title}`;
     }
 
     // Get project info for header
@@ -80,16 +80,7 @@ export default async function Page(props: {
       };
     }
 
-    const userMessage: UIMessage = {
-      id: messageId,
-      role: 'user',
-      content: content,
-      parts: [{ type: 'text', text: content }],
-      createdAt: new Date(),
-      experimental_attachments: [],
-    };
-
-    newMessage = userMessage;
+    // The actual message creation will happen client-side in the Chat component
   } else {
     // EXISTING CHAT: Load from database
     const chat = await getChatById(supabase, id);
@@ -126,13 +117,17 @@ export default async function Page(props: {
 
   // Extract project information from the chat
   const projectName = chatData?.projects?.name;
+  const isDefaultProject = chatData?.projects?.is_default && chatData?.projects?.name === 'Default Project';
   projectId = chatData?.project_id
   parentChatId = chatData?.parent_chat_id || null;
   const chatTitle = chatData?.title || 'Untitled';
 
-  // Check if we need to resume streaming
-  // const resumeStream = searchParams.resumeStream === 'true';
-  // const messageId = typeof searchParams.messageId === 'string' ? searchParams.messageId : undefined;
+  console.log('from chat page project name, chat title:', {projectName, chatTitle})
+  console.log('from chat page project id, parent chat id:', {projectId, parentChatId})
+  console.log('from chat page chat summary:', {chatSummary});
+
+  console.log(`Rendering chat ${id} with mode=${mode}, hasInitialMessage=${hasInitialMessage}, projectId=${projectId}`);
+  console.log('parent chat title', parentChatTitle);
 
   return (
     <>
@@ -144,14 +139,13 @@ export default async function Page(props: {
         projectId={projectId}
         projectName={projectName}
         chatTitle={chatTitle}
-        // resumeStream={resumeStream}
-        // streamingMessageId={messageId}
         initialMode={mode}
-        isNewChat={!!initialMessage} // Indicate if this is a new chat
-        newMessage={newMessage}
+        isNewChat={hasInitialMessage} // Use hasInitialMessage flag
+        newMessage={newMessage} // Will be null, handled client-side
         parentChatId={parentChatId}
         chatSummary={chatSummary}
         parentChatTitle={parentChatTitle}
+        isDefaultProject={isDefaultProject}
       />
     </>
   );

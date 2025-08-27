@@ -31,11 +31,12 @@ interface ChatProps {
   projectName?: string;
   chatTitle?: string;
   initialMode?: ModeType;
-  isNewChat?: boolean;
-  newMessage?: UIMessage | null;
-  parentChatId?: string | null;
-  chatSummary?: string | null;
-  parentChatTitle?: string | null;
+  isNewChat?: boolean; // Optional prop to indicate if this is a new chat
+  newMessage?: UIMessage | null; // Optional prop for new message
+  parentChatId?: string | null; // Optional parent chat ID
+  chatSummary?: string | null; // Optional chat summary
+  parentChatTitle?: string | null; // Optional parent chat title
+  isDefaultProject?: boolean; // Optional prop to indicate if this is the default project
 }
 
 export function Chat({
@@ -47,11 +48,12 @@ export function Chat({
   projectName,
   chatTitle: initialChatTitle,
   initialMode = 'coach',
-  isNewChat = false,
-  newMessage = null,
-  parentChatId = null,
-  chatSummary = null,
-  parentChatTitle = null,
+  isNewChat = false, // Default to false if not provided
+  newMessage = null, // Default to null if not provided
+  parentChatId = null, // Optional parent chat ID
+  chatSummary = null, // Optional chat summary
+  parentChatTitle = null, // Optional parent chat title
+  isDefaultProject = false, // Optional prop to indicate if this is the default project
 }: ChatProps) {
   const { mutate } = useSWRConfig();
   const { mutate: mutateCredits } = useCredits();
@@ -60,6 +62,45 @@ export function Chat({
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
   const [chatTitle, setChatTitle] = useState(initialChatTitle || 'Untitled');
   const autoSubmitRef = useRef(false);
+  const [clientNewMessage, setClientNewMessage] = useState<UIMessage | null>(null);
+
+  // Handle localStorage retrieval on client-side
+  useEffect(() => {
+    if (isNewChat && typeof window !== 'undefined') {
+      try {
+        const storedMessage = localStorage.getItem(`initial-message-${id}`);
+        const storedMode = localStorage.getItem(`initial-mode-${id}`) as ModeType;
+        
+        if (storedMessage) {
+          // Clean up localStorage immediately
+          localStorage.removeItem(`initial-message-${id}`);
+          localStorage.removeItem(`initial-mode-${id}`);
+          
+          // Set the mode if it was stored
+          if (storedMode) {
+            setMode(storedMode);
+          }
+          
+          // Create the message object
+          const messageObj: UIMessage = {
+            id: generateUUID(),
+            role: 'user',
+            content: storedMessage,
+            parts: [{ type: 'text', text: storedMessage }],
+            createdAt: new Date(),
+            experimental_attachments: [],
+          };
+          
+          setClientNewMessage(messageObj);
+          
+          console.log('Retrieved message from localStorage:', storedMessage.substring(0, 100) + '...');
+        }
+      } catch (error) {
+        console.error('Error retrieving initial message from localStorage:', error);
+        toast.error('Failed to load initial message');
+      }
+    }
+  }, [id, isNewChat]);
 
   const handleModeChange = (newMode: ModeType) => {
     setMode(newMode);
@@ -90,7 +131,7 @@ export function Chat({
       // Clean up URL after first message if this was a new chat
       if (isNewChat) {
         const url = new URL(window.location.href);
-        url.searchParams.delete('initialMessage');
+        url.searchParams.delete('hasInitialMessage');
         url.searchParams.delete('projectId');
         url.searchParams.delete('mode');
         url.searchParams.delete('parentChatId');
@@ -99,7 +140,6 @@ export function Chat({
       }
     },
     onError: (error) => {
-      // setIsResuming(false);
       console.log('error in useChat:', error)
       if (error.message.includes('Insufficient credits')) {
         toast.error('You have run out of credits. Please purchase more credits to continue.');
@@ -131,8 +171,7 @@ export function Chat({
     }
   }, [data]);
 
-  // Replace the auto-submit useEffect in /components/chat.tsx
-
+  // Auto-submit effect - now using clientNewMessage from localStorage
   useEffect(() => {
     if (autoSubmitRef.current) {
       console.log('⏭️ Skipping duplicate useEffect execution');
@@ -144,7 +183,7 @@ export function Chat({
 
     console.log('Auto-submit effect running:', {
       isNewChat,
-      newMessage,
+      hasClientNewMessage: !!clientNewMessage,
       messagesLength: messages.length,
       firstMessageRole: messages[0]?.role,
       status,
@@ -152,28 +191,27 @@ export function Chat({
     });
 
     if (isNewChat && 
-        newMessage &&
-        newMessage.role === 'user' && 
+        clientNewMessage &&
+        clientNewMessage.role === 'user' && 
         status === 'ready' && 
         !hasAutoSubmitted) {
       
       console.log('Auto-submitting new chat message');
-      console.log('User message:', newMessage.content);
+      console.log('User message:', clientNewMessage.content);
       
       console.log('🚀 APPENDING MESSAGE - Execution time:', new Date().toISOString());
-      autoSubmitRef.current = true; // Mark as executed
+      autoSubmitRef.current = true;
       setHasAutoSubmitted(true);
       
-      // Instead of trying to submit the form, just append the message
-      // This will trigger the AI response directly
+      // Append the message to trigger AI response
       append({
-        id: newMessage.id,
+        id: clientNewMessage.id,
         role: 'user',
-        content: newMessage.content,
-        createdAt: newMessage.createdAt
+        content: clientNewMessage.content,
+        createdAt: clientNewMessage.createdAt
       });
     }
-  }, [isNewChat, newMessage, status, hasAutoSubmitted, append]);
+  }, [isNewChat, clientNewMessage, status, hasAutoSubmitted, append]);
 
   // Reset ref when component unmounts or chat changes
   useEffect(() => {
@@ -191,6 +229,7 @@ export function Chat({
         projectId={projectId}
         projectName={projectName}
         chatTitle={chatTitle}
+        isDefaultProject={isDefaultProject}
       />
 
       {/* Simple Inheritance Icon - Only shows when parentChatId exists */}

@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+// Removed Checkbox import as default project feature is removed
 import type { Project } from '@/types/app.types';
 import type { CreateProjectData, UpdateProjectData } from '@/hooks/use-projects';
 import { getProjectDisplayName } from '@/lib/utils';
@@ -68,7 +69,7 @@ export function ProjectDialog({
           id: project.id,
           name: name.trim(),
           description: description.trim() || undefined,
-          is_default: project.is_default,
+          is_default: project.is_default, // Keep existing default status
         });
       } else {
         await onSave({
@@ -139,6 +140,8 @@ export function ProjectDialog({
                 disabled={isSaving}
               />
             </div>
+
+            {/* Default checkbox feature removed */}
 
             {isEditMode && project?.is_default && (
               <div className="text-xs text-muted-foreground bg-muted p-2 rounded">

@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { VisibilityType } from '@/types/app.types';
 import HeaderAuthClient from '@/components/header-auth-client';
 import { CreditsNavItem } from './credits-nav-item';
+import { getProjectDisplayName } from '@/lib/utils';
 
 function PureChatHeader({
   chatId,
@@ -21,6 +22,7 @@ function PureChatHeader({
   projectId,
   projectName,
   chatTitle,
+  isDefaultProject
 }: {
   chatId: string;
   selectedVisibilityType: VisibilityType;
@@ -28,24 +30,30 @@ function PureChatHeader({
   projectId?: string;
   projectName?: string;
   chatTitle?: string; // Optional chat title since ChatHeader can be used in different contexts
+  isDefaultProject?: boolean; // New prop to indicate if this is the default project
 }) {
   const router = useRouter();
   const { open } = useSidebar();
 
   const { width: windowWidth } = useWindowSize();
 
+  // Get the display name for the project
+  const displayProjectName = projectName && isDefaultProject 
+    ? getProjectDisplayName(projectName, isDefaultProject)
+    : projectName;
+
   return (
     <header className="flex sticky top-0 bg-background py-1.5 items-center px-2 md:px-2 gap-2">
       <SidebarToggle />
 
       {/* Project name and chat title display */}
-      {projectName && projectId && (
+      {displayProjectName && projectId && (
         <div className="order-3 md:order-2 me-auto items-center gap-2 flex whitespace-nowrap">
           <Link href={`/app/project/${projectId}`}>
             <div className="flex items-center gap-2 px-2 py-1 bg-muted/50 rounded-md">
               <Icons.FolderIcon size={14} className="text-muted-foreground" />
               <span className="text-sm font-medium text-muted-foreground">
-                {projectName}
+                {displayProjectName}
               </span>
             </div>
           </Link>

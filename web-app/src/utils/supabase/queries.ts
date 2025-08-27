@@ -61,7 +61,7 @@ export async function getChatsByUserId(supabase: SupabaseClient<Database>) {
 export async function getChatById(supabase: SupabaseClient<Database>, id: string) {
   const { data, error } = await supabase
     .from('chats')
-    .select('*, projects!inner(name, description)')
+    .select('*, projects!inner(name, description, is_default)')
     .eq('id', id)
     .maybeSingle();
 

@@ -176,13 +176,16 @@ function PureMultimodalInput({
       // Create new chat with inherit flag
       const newChatId = generateUUID();
       const continueMessage = "Continue our previous conversation";
+
+      // Store the continue message in localStorage (same as ProjectChat)
+      localStorage.setItem(`initial-message-${newChatId}`, continueMessage);
+      localStorage.setItem(`initial-mode-${newChatId}`, mode);
       
       // Navigate to inherit flag and parent chat id in URL params
       const params = new URLSearchParams({
-        initialMessage: continueMessage,
         parentChatId: chatId, // Parent chat to inherit from
         inherit: 'true', // Flag to trigger server-side summary generation
-        mode: mode,
+        hasInitialMessage: 'true', // New approach
       });
       
       if (projectId) {
