@@ -841,11 +841,6 @@ ALTER TABLE ONLY "public"."messages"
 
 
 
-ALTER TABLE ONLY "public"."projects"
-    ADD CONSTRAINT "one_default_project_per_user" UNIQUE ("user_id", "is_default") DEFERRABLE INITIALLY DEFERRED;
-
-
-
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
 
