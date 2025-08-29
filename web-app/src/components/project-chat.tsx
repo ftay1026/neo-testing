@@ -65,7 +65,7 @@ export function ProjectChat({ projectId, projectName, className }: ProjectChatPr
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={`Send a message to start chatting in ${projectName}...`}
-          className='min-h-[120px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base pb-16 pr-14 pl-4 pt-4 dark:border-zinc-700'
+          className='min-h-[120px] max-h-[calc(75dvh)] resize-none rounded-2xl !text-base pb-16 pr-14 pl-4 pt-4 dark:border-zinc-700'
           rows={3}
           autoFocus
           onKeyDown={(e) => {
