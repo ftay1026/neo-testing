@@ -1,0 +1,1 @@
+export const COACH_TEXT_PREFIX = '[COACH]';

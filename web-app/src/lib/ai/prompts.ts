@@ -9,3 +9,9 @@ export const regularPrompt =
 export const systemPrompt = (mode: ModeType | null) => {
   return mode === 'coach' ? coachPrompt : regularPrompt;
 };
+
+export const enhancedUserMessage = (message: string, mode: ModeType | null) => {
+  return `${systemPrompt(mode)}\n\nUser: ${message}`;
+};
+
+export const generalSystemPrompt = 'You are a helpful person. You take different roles based on what is requested by user in their messages. You only respond like an assistant or a coach. Help the user with their problem.';
