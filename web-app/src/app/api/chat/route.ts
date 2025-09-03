@@ -7,7 +7,7 @@ import {
   generateText,
   Message
 } from 'ai';
-import { systemPrompt, enhancedUserMessage, generalSystemPrompt } from '@/lib/ai/prompts';
+import { systemPrompt } from '@/lib/ai/prompts';
 import {
   getChatById,
   saveChat,
@@ -30,7 +30,6 @@ import { createClient as createAdminClient } from '@/utils/supabase/admin';
 import { Database } from '@/types/database.types';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ModeType } from '@/types/app.types';
-import { COACH_TEXT_PREFIX } from '@/constants/mode';
 
 export const maxDuration = 60;
 
@@ -260,48 +259,48 @@ export async function POST(request: Request) {
 
     // Update the system prompt with document context and chat summary
     const enhancedSystemPrompt = (documentContext || chatSummaryContext || memoryContext)
-      ? `${generalSystemPrompt}\n\n${chatSummaryContext}\n\n${memoryContext}\n\n${documentContext}`
-      : generalSystemPrompt;
+      ? `${systemPrompt(mode ?? null)}\n\n${chatSummaryContext}\n\n${memoryContext}\n\n${documentContext}`
+      : systemPrompt(mode ?? null);
 
     // Process the individual messages to add dynamic user prompt to it based on COACH_TEXT_PREFIX
     // Check if individual message content start with COACH_TEXT_Prefix, if yes then call enhancedUserMessage with mode
-    const processedMessages: UIMessage[] = messages.map((msg) => {
-      if (msg.role === 'user' && msg.content.startsWith(COACH_TEXT_PREFIX)) {
-        return {
-          ...msg,
-          content: enhancedUserMessage(msg.content, 'coach'),
-          parts: [
-            ...msg.parts?.filter(part => part.type !== 'text') || [],
-            {
-              type: 'text',
-              text: enhancedUserMessage(msg.content, 'coach'),
-            }
-          ]
-        }
-      } else if (msg.role === 'user') {
-        return {
-          ...msg,
-          content: enhancedUserMessage(msg.content, 'assistant'),
-          parts: [
-            ...msg.parts?.filter(part => part.type !== 'text') || [],
-            {
-              type: 'text',
-              text: enhancedUserMessage(msg.content, 'assistant'),
-            }
-          ]
-        }
-      }
-      return msg;
-    });
+    // const processedMessages: UIMessage[] = messages.map((msg) => {
+    //   if (msg.role === 'user' && msg.content.startsWith(COACH_TEXT_PREFIX)) {
+    //     return {
+    //       ...msg,
+    //       content: enhancedUserMessage(msg.content, 'coach'),
+    //       parts: [
+    //         ...msg.parts?.filter(part => part.type !== 'text') || [],
+    //         {
+    //           type: 'text',
+    //           text: enhancedUserMessage(msg.content, 'coach'),
+    //         }
+    //       ]
+    //     }
+    //   } else if (msg.role === 'user') {
+    //     return {
+    //       ...msg,
+    //       content: enhancedUserMessage(msg.content, 'assistant'),
+    //       parts: [
+    //         ...msg.parts?.filter(part => part.type !== 'text') || [],
+    //         {
+    //           type: 'text',
+    //           text: enhancedUserMessage(msg.content, 'assistant'),
+    //         }
+    //       ]
+    //     }
+    //   }
+    //   return msg;
+    // });
 
-    console.log('Processed messages for chat completion:', processedMessages);
+    // console.log('Processed messages for chat completion:', processedMessages);
 
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
           model: anthropic('claude-3-5-sonnet-20241022'),
           system: enhancedSystemPrompt,
-          messages: processedMessages,
+          messages: messages,
           maxSteps: 5,
           experimental_activeTools: [],
           experimental_transform: smoothStream({ chunking: 'word' }),

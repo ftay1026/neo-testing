@@ -15,7 +15,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { COACH_TEXT_PREFIX } from '@/constants/mode';
 
 interface ProjectChatProps {
   projectId: string;
@@ -56,24 +55,6 @@ export function ProjectChat({ projectId, projectName, className }: ProjectChatPr
     console.log('handleModeChange called with new mode:', newMode);
     setMode(newMode);
   };
-
-  useEffect(() => {
-    if (mode === 'coach') {
-      setInput((prevInput) => {
-        if (!prevInput.startsWith(COACH_TEXT_PREFIX)) {
-          return COACH_TEXT_PREFIX + ' ' + prevInput;
-        }
-        return prevInput;
-      });
-    } else if (mode === 'assistant') {
-      setInput((prevInput) => {
-        if (prevInput.startsWith(COACH_TEXT_PREFIX)) {
-          return prevInput.slice(COACH_TEXT_PREFIX.length).trimStart();
-        }
-        return prevInput;
-      });
-    }
-  }, [mode, setInput]);
 
   console.log('ProjectChat rendered with mode:', mode);
 

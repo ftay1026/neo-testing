@@ -21,7 +21,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Link from 'next/link';
-import { COACH_TEXT_PREFIX } from '@/constants/mode';
 
 interface ChatProps {
   id: string;
@@ -103,6 +102,10 @@ export function Chat({
     }
   }, [id, isNewChat]);
 
+  const handleModeChange = (newMode: ModeType) => {
+    setMode(newMode);
+  };
+
   const {
     messages,
     setMessages,
@@ -148,36 +151,6 @@ export function Chat({
       mutateCredits();
     },
   });
-
-  const handleModeChange = (newMode: ModeType) => {
-    setMode(newMode);
-
-    // append COACH_TEXT_PREFIX to the input if it is not present
-    // if (newMode === 'coach' && !input.startsWith(COACH_TEXT_PREFIX)) {
-    //   setInput(COACH_TEXT_PREFIX + input);
-    // } else if (newMode === 'assistant' && input.startsWith(COACH_TEXT_PREFIX)) {
-    //   setInput(input.slice(COACH_TEXT_PREFIX.length));
-    // }
-  };
-
-  // Check the current mode and adjust input accordingly on the mount
-  useEffect(() => {
-    if (mode === 'coach') {
-      setInput((prevInput) => {
-        if (!prevInput.startsWith(COACH_TEXT_PREFIX)) {
-          return COACH_TEXT_PREFIX + ' ' + prevInput;
-        }
-        return prevInput;
-      });
-    } else if (mode === 'assistant') {
-      setInput((prevInput) => {
-        if (prevInput.startsWith(COACH_TEXT_PREFIX)) {
-          return prevInput.slice(COACH_TEXT_PREFIX.length).trimStart();
-        }
-        return prevInput;
-      });
-    }
-  }, [mode, setInput]);
 
   // Update chat title if data stream provides a title update
   useEffect(() => {
