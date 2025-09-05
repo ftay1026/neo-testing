@@ -117,6 +117,7 @@ export function Chat({
     reload,
     append,
     data,
+    error,
   } = useChat({
     id,
     body: { id, mode, projectId, chatSummary, parentChatId, initialChatTitle },
@@ -260,6 +261,21 @@ export function Chat({
         reload={reload}
         isReadonly={false}
       />
+
+      {
+        error && (
+          <div className="text-center text-sm text-red-600 mb-2">
+            {error.message.includes('overloaded_error') ? (
+              <>
+              <p>The server is currently overloaded. Please try again later.</p>
+              <Button variant="link" onClick={() => reload()}>Try Again</Button>
+              </>
+            ) : (
+              <p>Error: {error.message}</p>
+            )}
+          </div>
+        )
+      }
 
       <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
         {!isReadonly && (
