@@ -45,15 +45,17 @@ export async function generateChatSummary(parentChatId: string): Promise<string 
       model: anthropic('claude-3-5-sonnet-20241022'),
       temperature: 0.3,
       maxTokens: 500,
-      system: `You are tasked with creating a concise summary of a conversation that will be used to provide context for continuing the conversation in a new chat session.
+      system: `Analyze this conversation and create a summary of our conversation with regards to everthing we've discussed so far, showing the evolution of how we went from the start of this conversation into the current conclusion.
 
-Requirements:
-- Summarize the key topics, decisions, and insights discussed
-- Maintain the conversational context and any important details
-- Keep it concise but comprehensive enough for seamless continuation
-- Focus on what's most relevant for continuing the conversation
-- Maximum 500 tokens`,
-      prompt: `Please summarize this conversation:\n\n${conversationText}`,
+Keep a list of data shared in the conversation like names, date, etc, with small description and who said to whome for better context.
+
+Keep the last four chat pairs as such for better clarity.
+
+format:
+detailed summary:
+key identifiable information:
+last chat iterations:`,
+      prompt: `Please find the conversation:\n\n${conversationText}`,
     });
 
     return `Previous conversation context:\n${summary}\n\nThe user wants to continue this conversation.`;
