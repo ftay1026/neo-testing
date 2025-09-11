@@ -50,7 +50,6 @@ export async function generateChatSummary(parentChatId: string): Promise<string 
     const { text: summary } = await generateText({
       model: anthropic('claude-3-5-sonnet-20241022'),
       temperature: 0.3,
-      maxTokens: 500,
       system: `Analyze this conversation and create a summary of our conversation with regards to everthing we've discussed so far, showing the evolution of how we went from the start of this conversation into the current conclusion.
 
 Keep a list of data shared in the conversation like names, date, etc, with small description and who said to whome for better context.
