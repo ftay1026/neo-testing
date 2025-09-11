@@ -29,7 +29,7 @@ export async function generateChatSummary(parentChatId: string): Promise<string 
       return null;
     }
 
-    console.log(JSON.stringify(messages, null, 2);
+    console.log(JSON.stringify(messages, null, 2));
 
     // Convert messages to text format
     const conversationText = messages
