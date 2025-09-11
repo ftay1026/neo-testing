@@ -29,6 +29,8 @@ export async function generateChatSummary(parentChatId: string): Promise<string 
       return null;
     }
 
+    console.log(JSON.stringify(messages, null, 2);
+
     // Convert messages to text format
     const conversationText = messages
       .map(msg => {
@@ -39,6 +41,10 @@ export async function generateChatSummary(parentChatId: string): Promise<string 
         return `${msg.role}: ${textContent}`;
       })
       .join('\n');
+
+    console.log('---------------------------------');
+    
+    console.log(conversationText);
 
     // Use AI to generate a concise summary
     const { text: summary } = await generateText({
