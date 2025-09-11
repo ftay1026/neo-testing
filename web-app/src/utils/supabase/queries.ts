@@ -32,6 +32,7 @@ export async function saveChat(
   title: string,
   projectId: string,
   parentChatId: string | null,
+  chatSummary: string | null,
   visibility: 'private' | 'public' = 'private'
 ) {
   const { error } = await supabase.from('chats').insert({
@@ -39,7 +40,8 @@ export async function saveChat(
     title,
     project_id: projectId,
     parent_chat_id: parentChatId,
-    visibility
+    visibility,
+    inheritance_summary: chatSummary
   });
 
   if (error) throw error;

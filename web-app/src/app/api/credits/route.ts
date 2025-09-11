@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
-import { getCustomerId } from '@/utils/paddle/get-customer-id';
+import { getHitPayCustomerId } from '@/utils/hitpay/get-customer-ids';
 import { getUser } from '@/utils/supabase/queries';
 import type { Database } from '@/types/database.types';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -12,7 +12,7 @@ export async function GET() {
       return new Response('Unauthorized', { status: 401 });
     }
 
-    const customerId = await getCustomerId();
+    const customerId = await getHitPayCustomerId();
     console.log('Retrieved customerId:', customerId);
 
     if (!customerId) {

@@ -77,6 +77,7 @@ export default async function Page(props: {
         project_id: projectId,
         projects: project,
         parent_chat_id: parentChatId,
+        chat_summary: chatSummary, // Include summary in chat data
       };
     }
 
@@ -95,6 +96,9 @@ export default async function Page(props: {
     const messagesFromDb = await getMessagesByChatId(supabase, id);
     initialMessages = convertToUIMessages(messagesFromDb);
     chatData = chat;
+
+    // Use stored parent chat summary if available
+    chatSummary = chat.inheritance_summary;
 
     if (chat.parent_chat_id) {
       const parentChat = await getChatById(supabase, chat.parent_chat_id);
@@ -143,7 +147,7 @@ export default async function Page(props: {
         isNewChat={hasInitialMessage} // Use hasInitialMessage flag
         newMessage={newMessage} // Will be null, handled client-side
         parentChatId={parentChatId}
-        chatSummary={chatSummary}
+        chatSummary={chatSummary} // Always pass summary (null for non-inherited chats)
         parentChatTitle={parentChatTitle}
         isDefaultProject={isDefaultProject}
       />

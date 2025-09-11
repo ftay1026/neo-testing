@@ -50,27 +50,36 @@ CREATE OR REPLACE FUNCTION "public"."check_and_deduct_credits"("p_customer_id" "
 DECLARE
     v_current_credits int;
 BEGIN
-    -- Retrieve current credits for the given customer
+    -- Get current credits
     SELECT credits INTO v_current_credits
     FROM public.credits
     WHERE customer_id = p_customer_id;
 
-    -- Check if the customer has sufficient credits
-    IF v_current_credits IS NULL OR v_current_credits < p_required_credits THEN
-        RETURN false; -- Insufficient credits, function will return false
+    -- If no record exists, create one with 0 credits
+    IF v_current_credits IS NULL THEN
+        INSERT INTO public.credits (customer_id, credits)
+        VALUES (p_customer_id, 0);
+        v_current_credits := 0;
     END IF;
 
-    -- Deduct the specified number of credits
-    UPDATE public.credits
-    SET credits = credits - p_required_credits,
-        updated_at = now()
-    WHERE customer_id = p_customer_id;
+    -- Allow deduction if current balance is >= 0 (can go negative)
+    -- Block if already negative
+    IF v_current_credits >= 0 THEN
+        -- Deduct the credits (can make balance negative)
+        UPDATE public.credits
+        SET credits = credits - p_required_credits,
+            updated_at = now()
+        WHERE customer_id = p_customer_id;
 
-    -- Log the deduction in the transactions table
-    INSERT INTO public.credit_transactions (customer_id, amount, description)
-    VALUES (p_customer_id, -p_required_credits, 'Chat API usage');
+        -- Log the deduction
+        INSERT INTO public.credit_transactions (customer_id, amount, description)
+        VALUES (p_customer_id, -p_required_credits, 'Chat API usage');
 
-    RETURN true; -- Deduction was successful
+        RETURN true;
+    ELSE
+        -- Already negative, don't allow
+        RETURN false;
+    END IF;
 END;
 $$;
 
@@ -530,11 +539,16 @@ CREATE TABLE IF NOT EXISTS "public"."chats" (
     "visibility" character varying(7) DEFAULT 'private'::character varying NOT NULL,
     "project_id" "uuid" NOT NULL,
     "parent_chat_id" "uuid",
+    "inheritance_summary" "text",
     CONSTRAINT "chats_visibility_check" CHECK ((("visibility")::"text" = ANY (ARRAY[('public'::character varying)::"text", ('private'::character varying)::"text"])))
 );
 
 
 ALTER TABLE "public"."chats" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."chats"."inheritance_summary" IS 'Snapshot summary of parent chat content at the time this chat was inherited';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."credit_transactions" (
@@ -885,6 +899,10 @@ CREATE INDEX "documents_project_id_idx" ON "public"."documents" USING "btree" ("
 
 
 CREATE UNIQUE INDEX "documents_project_title_key" ON "public"."documents" USING "btree" ("project_id", "title") WHERE ("is_direct_file" = true);
+
+
+
+CREATE INDEX "idx_chats_inheritance_summary" ON "public"."chats" USING "btree" ("parent_chat_id") WHERE ("inheritance_summary" IS NOT NULL);
 
 
 

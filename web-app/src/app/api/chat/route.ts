@@ -30,6 +30,7 @@ import { createClient as createAdminClient } from '@/utils/supabase/admin';
 import { Database } from '@/types/database.types';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ModeType } from '@/types/app.types';
+import { calculateRequiredCredits } from '@/lib/credits';
 
 export const maxDuration = 60;
 
@@ -127,20 +128,34 @@ export async function POST(request: Request) {
     const supabaseAdmin: SupabaseClient<Database> = await createAdminClient();
 
     // Check if user has enough credits using the customer_id
-    const { data: hasEnoughCredits, error: creditError } = await supabaseAdmin.rpc('check_and_deduct_credits', {
-      p_customer_id: customerId,
-      p_required_credits: 1
-    });
+    // const { data: hasEnoughCredits, error: creditError } = await supabaseAdmin.rpc('check_and_deduct_credits', {
+    //   p_customer_id: customerId,
+    //   p_required_credits: 1
+    // });
 
-    if (creditError) {
-      console.error('Credit check error:', creditError);
-      return new Response('An error occurred while checking credits', { 
-        status: 500,
-        statusText: 'Credit check failed'
-      });
-    }
+    // if (creditError) {
+    //   console.error('Credit check error:', creditError);
+    //   return new Response('An error occurred while checking credits', { 
+    //     status: 500,
+    //     statusText: 'Credit check failed'
+    //   });
+    // }
 
-    if (!hasEnoughCredits) {
+    // if (!hasEnoughCredits) {
+    //   return new Response('Insufficient credits. Please purchase more credits to continue.', { 
+    //     status: 402,
+    //     statusText: 'Insufficient credits'
+    //   });
+    // }
+
+    // Check if user already has negative balance
+    const { data: creditRecord } = await supabaseAdmin
+      .from('credits')
+      .select('credits')
+      .eq('customer_id', customerId)
+      .maybeSingle();
+
+    if (creditRecord && creditRecord.credits < 0) {
       return new Response('Insufficient credits. Please purchase more credits to continue.', { 
         status: 402,
         statusText: 'Insufficient credits'
@@ -176,7 +191,7 @@ export async function POST(request: Request) {
 
     if (isNewChat) {
       // Create chat with placeholder title - will be updated after first response
-      await saveChat(supabase, id, initialChatTitle ?? 'Untitled', targetProjectId, parentChatId);
+      await saveChat(supabase, id, initialChatTitle ?? 'Untitled', targetProjectId, parentChatId, chatSummary ?? null);
     } else {
       if (existingChat.user_id !== user.id) {
         return new Response('Unauthorized', { status: 401 });
@@ -305,10 +320,28 @@ export async function POST(request: Request) {
           experimental_activeTools: [],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
-          onFinish: async ({ response }) => {
+          onFinish: async ({ response, usage }) => {
             if (!user.id) return;
 
             try {
+              // NEW: Deduct actual credits based on token usage
+              if (usage) {
+                const inputTokens = usage.promptTokens || 0;
+                const outputTokens = usage.completionTokens || 0;
+                const actualCredits = calculateRequiredCredits(inputTokens, outputTokens);
+                
+                const { data: hasEnoughCredits, error: creditError } = await supabaseAdmin.rpc('check_and_deduct_credits', {
+                  p_customer_id: customerId,
+                  p_required_credits: actualCredits
+                });
+
+                if (creditError) {
+                  console.error('Credit deduction error:', creditError);
+                } else {
+                  console.log(`Deducted ${actualCredits} credits for ${inputTokens}+${outputTokens} tokens`);
+                }
+              }
+              
               const assistantId = getTrailingMessageId({
                 messages: response.messages.filter(
                   (message) => message.role === 'assistant',
@@ -368,9 +401,10 @@ export async function POST(request: Request) {
           sendReasoning: true,
         });
       },
-      onError: (error) => {
+      onError: (error: any) => {
         console.error('Error in streamText', error);
-        return 'Oops, an error occurred!';
+        const errorMessage: string = error?.message || 'Oops, an error occurred!';
+        return errorMessage;
       },
     });
   } catch (error) {

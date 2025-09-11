@@ -265,7 +265,7 @@ export function Chat({
       {
         error && (
           <div className="text-center text-sm text-red-600 mb-2">
-            {error.message.includes('overloaded_error') ? (
+            {error.message.includes('Overloaded') ? (
               <>
               <p>The server is currently overloaded. Please try again later.</p>
               <Button variant="link" onClick={() => reload()}>Try Again</Button>

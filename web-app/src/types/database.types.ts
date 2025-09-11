@@ -43,6 +43,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          inheritance_summary: string | null
           parent_chat_id: string | null
           project_id: string
           title: string
@@ -52,6 +53,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          inheritance_summary?: string | null
           parent_chat_id?: string | null
           project_id: string
           title: string
@@ -61,6 +63,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          inheritance_summary?: string | null
           parent_chat_id?: string | null
           project_id?: string
           title?: string
