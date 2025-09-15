@@ -211,14 +211,14 @@ export function ProjectFilesSection({ projectId, isMobile = false }: ProjectFile
         </div>
 
         {/* Capacity indicator */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-muted-foreground">1% of project capacity used</span>
           </div>
           <div className="w-full bg-secondary rounded-full h-1">
             <div className="bg-primary h-1 rounded-full" style={{ width: '1%' }}></div>
           </div>
-        </div>
+        </div> */}
 
         {/* Files List */}
         <div>
