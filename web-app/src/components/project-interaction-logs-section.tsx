@@ -10,7 +10,7 @@ import {
   BookOpenIcon 
 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { FileDialog } from '@/components/file-dialog' // Reuse existing dialog
+import { InteractionLogPreviewDialog } from '@/components/interaction-log-preview-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -192,18 +192,10 @@ export function ProjectInteractionLogsSection({ projectId, isMobile = false }: P
 
       {/* View Log Dialog - Reuse FileDialog but read-only */}
       {selectedLog && (
-        <FileDialog
+        <InteractionLogPreviewDialog
           isOpen={!!selectedLog}
           onOpenChange={(open) => !open && setSelectedLog(null)}
-          onSave={async () => {}} // No-op for read-only
-          file={{
-            id: selectedLog.id,
-            title: selectedLog.title,
-            content: selectedLog.content,
-            created_at: selectedLog.created_at,
-            updated_at: selectedLog.updated_at,
-          }}
-          isLoading={false}
+          log={selectedLog}
         />
       )}
 

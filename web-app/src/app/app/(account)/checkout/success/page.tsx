@@ -27,7 +27,7 @@ export default async function SuccessPage() {
               Payment successful
             </h1>
             <p className={'text-lg pb-16'}>Success! Your payment is complete, and you’re all set.</p>
-            <Button variant={'secondary'} asChild={true}>
+            <Button variant="default" asChild={true}>
               {data.user ? <Link href={'/app'}>Get back to coaching</Link> : <Link href={'/'}>Go to Home</Link>}
             </Button>
           </div>

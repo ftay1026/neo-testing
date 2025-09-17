@@ -15,14 +15,14 @@ import { Label } from '@/components/ui/label';
 import { CreateFileData, UpdateFileData } from '@/hooks/use-project-files';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit'
-import { Bold, Italic, List, ListOrdered, ChevronDown } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, ChevronDown, Edit } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { ProjectFile } from '@/types/app.types';
+import { ContentRenderer } from '@/components/content-renderer';
 
 interface FileDialogProps {
   isOpen: boolean;
@@ -48,7 +48,16 @@ export function FileDialog({
   // Add state to force re-renders when editor state changes
   const [editorState, setEditorState] = useState(0);
 
-  const isEditMode = !!file;
+  const [isEditMode, setIsEditMode] = useState(false);
+  const isExistingFile = !!file;
+  const hasContent = !!(file?.content || initialContent);
+
+  // For new files, start in edit mode. For existing files, start in preview mode
+  useEffect(() => {
+    if (isOpen) {
+      setIsEditMode(!isExistingFile || !hasContent);
+    }
+  }, [isOpen, isExistingFile, hasContent]);
 
   // Initialize Tiptap editor
   const editor = useEditor({
@@ -92,6 +101,7 @@ export function FileDialog({
     }
   } else {
     setTitle('');
+    setIsEditMode(false);
     if (editor) {
       editor.commands.setContent('');
     }
@@ -114,7 +124,7 @@ export function FileDialog({
 
     setIsSaving(true);
     try {
-      if (isEditMode && file) {
+      if (isExistingFile && file) {
         await onSave({
           id: file.id,
           title: title.trim(),
@@ -150,6 +160,46 @@ export function FileDialog({
     return 'T';
   };
 
+  const getDisplayContent = () => {
+    if (file?.content) return file.content;
+    if (initialContent) return initialContent;
+    if (editor) return editor.getHTML();
+    return '';
+  };
+
+  // Preview Mode
+  if (!isEditMode && hasContent) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[95vw] sm:max-w-[800px] max-h-[90vh] flex flex-col">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsEditMode(true)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <DialogHeader className="flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle className="flex items-center gap-2">
+                    {title || 'Untitled'}
+                  </DialogTitle>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+          
+          <div className="flex-1 overflow-auto p-4 border rounded-lg bg-muted/20">
+            <ContentRenderer content={getDisplayContent()} />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Edit Mode
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
@@ -161,9 +211,9 @@ export function FileDialog({
             {isEditMode ? 'Edit File' : 'Create New File'}
           </DialogTitle>
           <DialogDescription>
-            {isEditMode 
+            {isExistingFile 
               ? 'Make changes to your file. Click save when you\'re done.'
-              : 'Create a new file with a title and content. You can edit it later.'
+              : 'Create a new file with a title and content.'
             }
           </DialogDescription>
         </DialogHeader>
@@ -174,6 +224,7 @@ export function FileDialog({
           {/* Left side: Form fields (scrollable) */}
           <div className="flex-1 overflow-y-auto pr-4">
             <div className="grid gap-4 py-4">
+              {/* Title input */}
               <div className="grid gap-2">
                 <Label htmlFor="title">Title</Label>
                 <Input
@@ -186,6 +237,7 @@ export function FileDialog({
                 />
               </div>
               
+              {/* Content section */}
               <div className="grid gap-2 flex-1">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="content">Content</Label>
@@ -195,7 +247,7 @@ export function FileDialog({
                     </span>
                   )}
                 </div>
-                
+              
                 {/* Tiptap Editor Container - without toolbar and without overflow */}
                 <div className="border border-input rounded-md min-h-[250px] sm:min-h-[300px]">
                   <EditorContent 
@@ -203,16 +255,9 @@ export function FileDialog({
                     className="h-full prose prose-compact"
                   />
                 </div>
-                
-                {editor && editor.getText().length > 5000 && (
-                  <p className="text-xs text-muted-foreground">
-                    💡 Tip: Very large files may take longer to save and load
-                  </p>
-                )}
               </div>
             </div>
           </div>
-
           {/* Right side: Vertical toolbar (fixed) */}
           <div className="flex flex-col pt-8 pl-2">
             <div className="border border-border rounded bg-muted/30 p-2 space-y-2 flex flex-col items-left">
@@ -261,73 +306,63 @@ export function FileDialog({
               )}
               
               {/* Separator */}
-              <div className="h-px bg-border my-2"></div>
+              <div className="h-px bg-border my-2 w-full"></div>
               
-              {/* Bold Button */}
+              {/* Format buttons */}
               {editor && (
-                <Button
-                  type="button"
-                  variant={editor.isActive('bold') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => editor.chain().focus().toggleBold().run()}
-                  disabled={!editor.can().chain().focus().toggleBold().run()}
-                  className="h-8 w-8 p-0"
-                  title="Bold"
-                >
-                  <Bold className="h-4 w-4" />
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    variant={editor.isActive('bold') ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    disabled={!editor.can().chain().focus().toggleBold().run()}
+                    className="h-8 w-8 p-0"
+                    title="Bold"
+                  >
+                    <Bold className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant={editor.isActive('italic') ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    disabled={!editor.can().chain().focus().toggleItalic().run()}
+                    className="h-8 w-8 p-0"
+                    title="Italic"
+                  >
+                    <Italic className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="h-px bg-border my-2 w-full"></div>
+                  
+                  <Button
+                    type="button"
+                    variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    disabled={!editor.can().chain().focus().toggleBulletList().run()}
+                    className="h-8 w-8 p-0"
+                    title="Bullet List"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                    disabled={!editor.can().chain().focus().toggleOrderedList().run()}
+                    className="h-8 w-8 p-0"
+                    title="Numbered List"
+                  >
+                    <ListOrdered className="h-4 w-4" />
+                  </Button>
+                </>
               )}
-              
-              {/* Italic Button */}
-              {editor && (
-                <Button
-                  type="button"
-                  variant={editor.isActive('italic') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => editor.chain().focus().toggleItalic().run()}
-                  disabled={!editor.can().chain().focus().toggleItalic().run()}
-                  className="h-8 w-8 p-0"
-                  title="Italic"
-                >
-                  <Italic className="h-4 w-4" />
-                </Button>
-              )}
-              
-              {/* Separator */}
-              <div className="h-px bg-border my-2"></div>
-              
-              {/* Bullet List Button */}
-              {editor && (
-                <Button
-                  type="button"
-                  variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => editor.chain().focus().toggleBulletList().run()}
-                  disabled={!editor.can().chain().focus().toggleBulletList().run()}
-                  className="h-8 w-8 p-0"
-                  title="Bullet List"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              )}
-              
-              {/* Ordered List Button */}
-              {editor && (
-                <Button
-                  type="button"
-                  variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                  disabled={!editor.can().chain().focus().toggleOrderedList().run()}
-                  className="h-8 w-8 p-0"
-                  title="Numbered List"
-                >
-                  <ListOrdered className="h-4 w-4" />
-                </Button>
-              )}
-              
             </div>
-          
           </div>
         </div>
         
@@ -343,7 +378,7 @@ export function FileDialog({
             onClick={handleSave} 
             disabled={!title.trim() || !editor?.getText().trim() || isSaving}
           >
-            {isSaving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create File')}
+            {isSaving ? 'Saving...' : (isExistingFile ? 'Save Changes' : 'Create File')}
           </Button>
         </DialogFooter>
       </DialogContent>

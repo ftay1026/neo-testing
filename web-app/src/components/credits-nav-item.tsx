@@ -16,7 +16,7 @@ export function CreditsNavItem() {
           `${credits} credits remaining`
         )}
       </Badge>
-      <Link href="/app/credits" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "bg-secondary text-secondary-foreground hover:bg-secondary/90")}>
+      <Link href="/app/checkout?tier=transformation" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "bg-secondary text-secondary-foreground hover:bg-secondary/90")}>
         Topup
       </Link>
     </div>
