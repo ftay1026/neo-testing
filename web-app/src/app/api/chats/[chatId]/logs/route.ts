@@ -166,7 +166,7 @@ async function generateChatLogContent(
   }
 
   // Combine context with priority to recent messages and last log
-  const fullContext = `${previousLogsContext}--- Current Session Messages (Priority Focus) ---\n\n${conversationText}\n\n--- Current Date Time: ${new Date().toLocaleString()} ---\n\n--- End Current Session ---`;
+  const fullContext = `--- Previous logs context ---\n\n${previousLogsContext}--- Current Session Messages (Priority Focus) ---\n\n${conversationText}\n\n--- Current Date Time: ${new Date().toLocaleString()} ---\n\n--- End Current Session ---`;
 
   const systemPrompt = `Analyze this conversation and create a summary of our conversation with regards to everything we've discussed so far, showing the evolution of how we went from the start of this conversation into the current conclusion. This summary needs to inform ANY new instance of you in the same project about our conversation in a way that gets them to understand me to the level of depth and in the way you do right now. Speak as me, in the first person. Include a timestamp.
 \n\n
@@ -182,8 +182,6 @@ The chat is titled "${chatTitle}" and this session covers ${new Date(periodStart
       model: anthropic('claude-3-5-sonnet-20241022'),
       system: systemPrompt,
       prompt: fullContext,
-      temperature: 0.7,
-      maxTokens: 800,
     });
 
     return text;
