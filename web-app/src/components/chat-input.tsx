@@ -568,7 +568,7 @@ const PureLogButton = ({
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Create reflection log for this chat</p>
+          <p>Log</p>
         </TooltipContent>
       </Tooltip>
     </div>
@@ -606,7 +606,7 @@ const PureInheritChatButton = ({
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Start new chat continuing this conversation</p>
+          <p>Inherit</p>
         </TooltipContent>
       </Tooltip>
     </div>
@@ -646,7 +646,7 @@ const PureMemoryButton = ({
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{isMemoryMode ? 'Remember this message' : 'Remember this message'}</p>
+          <p>{isMemoryMode ? 'Remember' : 'Remember'}</p>
         </TooltipContent>
       </Tooltip>
     </div>
