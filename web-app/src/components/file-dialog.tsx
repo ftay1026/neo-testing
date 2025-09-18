@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ContentRenderer } from '@/components/content-renderer';
+import type { ProjectFile } from '@/types/app.types';
 
 interface FileDialogProps {
   isOpen: boolean;
