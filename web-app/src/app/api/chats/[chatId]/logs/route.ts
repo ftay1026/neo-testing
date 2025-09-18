@@ -168,24 +168,14 @@ async function generateChatLogContent(
   // Combine context with priority to recent messages and last log
   const fullContext = `${previousLogsContext}--- Current Session Messages (Priority Focus) ---\n\n${conversationText}\n\n--- Current Date Time: ${new Date().toLocaleString()} ---\n\n--- End Current Session ---`;
 
-  const systemPrompt = `You are helping create a comprehensive conversation summary that will inform future AI instances about the user and their journey in this specific chat.
-
-Your task: Analyze this conversation and create a summary of our conversation with regards to everything we've discussed so far, showing the evolution of how we went from the start of this conversation into the current conclusion. This summary needs to inform ANY new instance of you in the same project about our conversation in a way that gets them to understand me to the level of depth and in the way you do right now. Speak as me, in the first person. Include a timestamp.
-
-Key requirements:
-- Write in FIRST PERSON as the user (speak as "I", not "the user")
-- You are being identified as NEO to the user
-- Show evolution and progression of the conversation
-- Focus on insights, breakthroughs, patterns, and key realizations
-- Prioritize the most recent messages and the last log for continuity
-- Include context from previous logs but emphasize recent developments
-- Include a timestamp
-- Use markdown formatting for structure
-- Make it comprehensive enough for a new AI to understand the user's context
-
-The chat is titled "${chatTitle}" and this session covers ${new Date(periodStart).toLocaleDateString()} to ${new Date(periodEnd).toLocaleDateString()}.
-
-Important: This summary should help a new AI instance understand the user as deeply as you do right now.`;
+  const systemPrompt = `Analyze this conversation and create a summary of our conversation with regards to everything we've discussed so far, showing the evolution of how we went from the start of this conversation into the current conclusion. This summary needs to inform ANY new instance of you in the same project about our conversation in a way that gets them to understand me to the level of depth and in the way you do right now. Speak as me, in the first person. Include a timestamp.
+\n\n
+Additional requirements:  
+- Include context from previous logs but emphasize recent developments. 
+- Include a timestamp. 
+- Use markdown formatting for structure. 
+\n\n
+The chat is titled "${chatTitle}" and this session covers ${new Date(periodStart).toLocaleDateString()} to ${new Date(periodEnd).toLocaleDateString()}.`;
 
   try {
     const { text } = await generateText({
