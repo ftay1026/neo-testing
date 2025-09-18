@@ -1,7 +1,7 @@
 // src/components/project-chat.tsx
 'use client';
 
-import { useState, useCallback, memo, useEffect } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateUUID } from '@/lib/utils';
 import { toast } from 'sonner';

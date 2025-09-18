@@ -1,4 +1,4 @@
-export type VisibilityType = 'private' | 'public';
+export type VisibilityType = 'private' | 'public'; // TODO: Add public visibility type, and possibility to change visibility type
 
 export type ModeType = 'assistant' | 'coach';
 

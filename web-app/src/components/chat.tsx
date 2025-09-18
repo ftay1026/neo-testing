@@ -129,6 +129,8 @@ export function Chat({
       mutate('/api/history');
       mutateCredits();
 
+      // Hint: data is undefined in the onFinish callback because it's still being processed
+
       // Clean up URL after first message if this was a new chat
       if (isNewChat) {
         const url = new URL(window.location.href);

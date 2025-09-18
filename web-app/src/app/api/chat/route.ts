@@ -40,6 +40,7 @@ async function generateTitleFromUserMessage({
   message: Message;
 }) {
   const { text: title } = await generateText({
+    // model: anthropic('claude-3-5-sonnet-20241022'), // HINT: AI_APICallError
     model: openai('gpt-4.1'),
     temperature: 0.5,
     maxTokens: 50,
@@ -98,9 +99,9 @@ export async function POST(request: Request) {
       messages,
       mode,
       projectId,
-      chatSummary,
-      parentChatId = null,
-      initialChatTitle = null,
+      chatSummary, // Extract chatSummary from request body
+      parentChatId = null, // Default to null if not provided
+      initialChatTitle = null, // Default to null if not provided
     }: {
       id: string;
       messages: Array<UIMessage>;
@@ -315,7 +316,7 @@ export async function POST(request: Request) {
         const result = streamText({
           model: anthropic('claude-3-5-sonnet-20241022'),
           system: enhancedSystemPrompt,
-          messages: messages,
+          messages,
           maxSteps: 5,
           experimental_activeTools: [],
           experimental_transform: smoothStream({ chunking: 'word' }),

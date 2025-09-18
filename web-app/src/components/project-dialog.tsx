@@ -22,7 +22,7 @@ interface ProjectDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: CreateProjectData | UpdateProjectData) => Promise<void>;
-  project?: Project | null;
+  project?: Project | null; // null for create, Project for edit
   isLoading?: boolean;
 }
 

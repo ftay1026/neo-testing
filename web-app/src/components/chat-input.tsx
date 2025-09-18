@@ -59,9 +59,9 @@ function PureMultimodalInput({
   setMessages,
   handleSubmit,
   className,
-  placeholder = "Send a message...",
-  customSubmit,
-  projectId,
+  placeholder = "Send a message...", // New prop with default value
+  customSubmit, // New prop for custom submit handler
+  projectId, // Add projectId prop
 }: {
   chatId: string;
   input: UseChatHelpers['input'];
@@ -76,7 +76,7 @@ function PureMultimodalInput({
   className?: string;
   placeholder?: string;
   customSubmit?: (e: React.FormEvent) => Promise<void>;
-  projectId?: string;
+  projectId?: string; // Add projectId prop
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();

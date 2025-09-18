@@ -5,6 +5,7 @@ import { Database } from '@/types/database.types';
 import { type UIMessage, type Attachment } from 'ai';
 import type { Json } from '@/types/database.types';
 
+// Types
 export type Chat = Database['public']['Tables']['chats']['Row'];
 export type Message = Database['public']['Tables']['messages']['Row'];
 
@@ -61,6 +62,7 @@ export async function getChatsByUserId(supabase: SupabaseClient<Database>) {
 
 // Get a specific chat by ID
 export async function getChatById(supabase: SupabaseClient<Database>, id: string) {
+  // HINT: The result could be null, if the chat does not exist
   const { data, error } = await supabase
     .from('chats')
     .select('*, projects!inner(name, description, is_default)')

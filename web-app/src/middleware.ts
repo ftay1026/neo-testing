@@ -1,8 +1,3 @@
-/**
- * Next.js middleware for session management.
- * Intercepts requests to update user session data via Supabase.
- */
-
 import { type NextRequest } from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
 
