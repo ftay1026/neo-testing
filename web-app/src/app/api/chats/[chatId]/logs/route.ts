@@ -2,10 +2,11 @@
 import { createClient } from '@/utils/supabase/server';
 import { getUser } from '@/utils/supabase/queries';
 import { generateText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
 import type { Database } from '@/types/database.types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { InteractionLog } from '@/types/app.types';
+import { getInteractionLogGenerationPrompt } from '@/lib/ai/prompts';
+import { openai } from '@ai-sdk/openai';
 
 // Types for the messages query result
 interface MessagePart {
@@ -96,6 +97,10 @@ export async function POST(
       previousLogs,
     );
 
+    if (!logContent) {
+      return new Response('Invalid input for log creation', { status: 500 });
+    }
+
     // Create the log title with chat context
     const logTitle = `Log - ${chat.title} - at ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
 
@@ -132,10 +137,10 @@ async function generateChatLogContent(
   periodStart: string,
   periodEnd: string,
   previousLogs: InteractionLog[] | null, // Add previous logs parameter
-): Promise<string> {
+): Promise<string | null> {
   // Guard clause for empty messages
   if (!messages || messages.length === 0) {
-    return generateChatFallbackContent(chatTitle, periodStart, periodEnd);
+    return null;
   }
 
   // Format previous logs context
@@ -162,32 +167,25 @@ async function generateChatLogContent(
 
   // If no meaningful content was extracted, use fallback
   if (!conversationText.trim()) {
-    return generateChatFallbackContent(chatTitle, periodStart, periodEnd);
+    return null;
   }
 
   // Combine context with priority to recent messages and last log
   const fullContext = `--- Previous logs context ---\n\n${previousLogsContext}--- Current Session Messages (Priority Focus) ---\n\n${conversationText}\n\n--- Current Date Time: ${new Date().toLocaleString()} ---\n\n--- End Current Session ---`;
 
-  const systemPrompt = `Analyze this conversation and create a summary of our conversation with regards to everything we've discussed so far, showing the evolution of how we went from the start of this conversation into the current conclusion. This summary needs to inform ANY new instance of you in the same project about our conversation in a way that gets them to understand me to the level of depth and in the way you do right now. Speak as me, in the first person. Include a timestamp.
-\n\n
-Additional requirements:  
-- Include context from previous logs but emphasize recent developments. 
-- Include a timestamp. 
-- Use markdown formatting for structure. 
-\n\n
-The chat is titled "${chatTitle}" and this session covers ${new Date(periodStart).toLocaleDateString()} to ${new Date(periodEnd).toLocaleDateString()}.`;
+  const interactionLogGenerationPrompt = getInteractionLogGenerationPrompt(chatTitle, periodStart, periodEnd);
 
   try {
     const { text } = await generateText({
-      model: anthropic('claude-3-5-sonnet-20241022'),
-      system: systemPrompt,
+      model: openai('gpt-4o'),
+      system: interactionLogGenerationPrompt,
       prompt: fullContext,
     });
 
     return text;
   } catch (error) {
     console.error('Error generating chat log content:', error);
-    return generateChatFallbackContent(chatTitle, periodStart, periodEnd);
+    return null;
   }
 }
 
@@ -209,32 +207,4 @@ function extractTextFromParts(parts: MessagePart[]): string {
     )
     .map(part => part.text)
     .join(' ') || 'No text content';
-}
-
-/**
- * Generate fallback content when AI generation fails or no messages exist
- */
-function generateChatFallbackContent(
-  chatTitle: string, 
-  periodStart: string, 
-  periodEnd: string
-): string {
-  const startDate = new Date(periodStart).toLocaleDateString();
-  const endDate = new Date(periodEnd).toLocaleDateString();
-  
-  return `# Chat Reflection - ${chatTitle}
-
-*${new Date().toLocaleDateString()}*
-
-I had a conversation in "${chatTitle}" covering some interesting ground. While I don't have specific details to reflect on right now, this chat was part of my ongoing journey with my AI assistant.
-
-## Key Areas
-- Continued exploration in this conversation thread
-- Building on previous discussions
-- Moving forward with new insights
-
-## Next Steps
-I plan to engage more deeply in future conversations to capture richer reflections.
-
-*This log was automatically generated. Future logs will contain more detailed insights as conversations develop.*`;
 }

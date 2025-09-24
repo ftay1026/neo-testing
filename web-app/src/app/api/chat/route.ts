@@ -31,6 +31,7 @@ import { Database } from '@/types/database.types';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ModeType } from '@/types/app.types';
 import { calculateRequiredCredits } from '@/lib/credits';
+import { chatTitleGenerationPrompt } from '@/lib/ai/prompts';
 
 export const maxDuration = 60;
 
@@ -44,11 +45,7 @@ async function generateTitleFromUserMessage({
     model: openai('gpt-4.1'),
     temperature: 0.5,
     maxTokens: 50,
-    system: `\n
-    - you will generate a short title based on the first message a user begins a conversation with
-    - ensure it is not more than 80 characters long
-    - the title should be a summary of the user's message
-    - do not use quotes or colons`,
+    system: chatTitleGenerationPrompt,
     prompt: JSON.stringify(message),
   });
 
@@ -99,17 +96,17 @@ export async function POST(request: Request) {
       messages,
       mode,
       projectId,
-      chatSummary, // Extract chatSummary from request body
-      parentChatId = null, // Default to null if not provided
-      initialChatTitle = null, // Default to null if not provided
+      chatSummary,
+      parentChatId = null,
+      initialChatTitle = null,
     }: {
       id: string;
       messages: Array<UIMessage>;
       mode?: ModeType | null;
       projectId?: string | null;
-      chatSummary?: string | null; // Add chatSummary type
-      parentChatId?: string | null; // Add parentChatId type
-      initialChatTitle?: string | null; // Add chatTitle type
+      chatSummary?: string | null;
+      parentChatId?: string | null;
+      initialChatTitle?: string | null;
     } = await request.json();
 
     const supabase: SupabaseClient<Database> = await createClient();
@@ -199,17 +196,17 @@ export async function POST(request: Request) {
       }
     }
 
-    // Save user message
-    await saveMessages(supabase, [
-      {
-        chat_id: id,
-        id: userMessage.id,
-        role: 'user',
-        parts: userMessage.parts,
-        attachments: userMessage.experimental_attachments ?? [],
-        created_at: new Date().toISOString(),
-      },
-    ]);
+    // // Save user message
+    // await saveMessages(supabase, [
+    //   {
+    //     chat_id: id,
+    //     id: userMessage.id,
+    //     role: 'user',
+    //     parts: userMessage.parts,
+    //     attachments: userMessage.experimental_attachments ?? [],
+    //     created_at: new Date().toISOString(),
+    //   },
+    // ]);
 
     // Generate embedding and search for relevant documents
     const queryEmbedding = await generateEmbedding(userMessage.content);
@@ -314,7 +311,7 @@ export async function POST(request: Request) {
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
-          model: anthropic('claude-3-5-sonnet-20241022'),
+          model: anthropic('claude-sonnet-4-20250514'),
           system: enhancedSystemPrompt,
           messages,
           maxSteps: 5,
@@ -325,51 +322,70 @@ export async function POST(request: Request) {
             if (!user.id) return;
 
             try {
-              // NEW: Deduct actual credits based on token usage
-              if (usage) {
-                const inputTokens = usage.promptTokens || 0;
-                const outputTokens = usage.completionTokens || 0;
-                const actualCredits = calculateRequiredCredits(inputTokens, outputTokens);
-                
-                const { data: hasEnoughCredits, error: creditError } = await supabaseAdmin.rpc('check_and_deduct_credits', {
-                  p_customer_id: customerId,
-                  p_required_credits: actualCredits
-                });
+              // Save user, and assistant messages in a single transaction
+              const messagesToSave = [];
 
-                if (creditError) {
-                  console.error('Credit deduction error:', creditError);
-                } else {
-                  console.log(`Deducted ${actualCredits} credits for ${inputTokens}+${outputTokens} tokens`);
-                }
-              }
-              
+              // Add user message
+              messagesToSave.push({
+                chat_id: id,
+                id: userMessage.id,
+                role: 'user' as const,
+                parts: userMessage.parts,
+                attachments: userMessage.experimental_attachments ?? [],
+                created_at: new Date().toISOString(),
+              });
+
+              // Add assistant message if available
               const assistantId = getTrailingMessageId({
                 messages: response.messages.filter(
                   (message) => message.role === 'assistant',
                 ),
               });
 
-              if (!assistantId) {
-                throw new Error('No assistant message found!');
-              }
+              if (assistantId) {
+                const [, assistantMessage] = appendResponseMessages({
+                  messages: [userMessage],
+                  responseMessages: response.messages,
+                });
 
-              const [, assistantMessage] = appendResponseMessages({
-                messages: [userMessage],
-                responseMessages: response.messages,
-              });
-
-              // Save assistant message
-              await saveMessages(supabase, [
-                {
+                messagesToSave.push({
                   id: assistantId,
                   chat_id: id,
                   role: assistantMessage.role as 'assistant',
                   parts: assistantMessage.parts ?? [],
-                  attachments:
-                    assistantMessage.experimental_attachments ?? [],
+                  attachments: assistantMessage.experimental_attachments ?? [],
                   created_at: new Date().toISOString(),
-                },
-              ]);
+                });
+              }
+
+              if (!assistantId) {
+                throw new Error('No assistant message found!');
+              }
+              // Save messages
+              await saveMessages(supabase, messagesToSave);
+
+              // Deduct actual credits based on token usage
+              if (usage) {
+                try {
+                  const inputTokens = usage.promptTokens || 0;
+                  const outputTokens = usage.completionTokens || 0;
+                  const actualCredits = calculateRequiredCredits(inputTokens, outputTokens);
+                  
+                  const { data: hasEnoughCredits, error: creditError } = await supabaseAdmin.rpc('check_and_deduct_credits', {
+                    p_customer_id: customerId,
+                    p_required_credits: actualCredits
+                  });
+
+                  if (creditError) {
+                    console.error('Credit deduction error:', creditError);
+                  } else {
+                    console.log(`Deducted ${actualCredits} credits for ${inputTokens}+${outputTokens} tokens`);
+                  }
+                } catch (error) {
+                  console.error('Error during credit deduction:', error);
+                  // Don't fail the entire operation for credit issues
+                }
+              }
 
               // Generate and update title for new chats without title
               if (isNewChat && (!initialChatTitle || initialChatTitle === 'Untitled')) {
@@ -387,13 +403,14 @@ export async function POST(request: Request) {
                   });
                 } catch (titleError) {
                   console.error('Failed to generate/update title:', titleError);
-                  // Don't fail the entire request if title update fails
+                  //Don't fail the entire request if title update fails
                 }
               }
 
             } catch (error) {
               console.error('Failed to save chat messages:', error);
-              // Don't throw here to avoid breaking the stream
+              // If message saving fails, the client should know
+              throw error;
             }
           },
         });
