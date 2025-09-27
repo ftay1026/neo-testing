@@ -36,3 +36,8 @@ externalPort = 80
 [[ports]]
 localPort = 39475
 externalPort = 3000
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["bash", "-c", "cd web-app && pnpm start"]
+build = ["bash", "-c", "cd web-app && pnpm build"]
