@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'https://https://supreme-doodle-wv57vg5593gj55-3000.app.github.dev/']
+      allowedOrigins: "*" // Allow all origins for Replit environment
     }
   },
   images: {
@@ -18,6 +18,20 @@ const nextConfig: NextConfig = {
         hostname: 'lljydrvrqipjgpmpdqqf.supabase.co',
       }
     ],
+  },
+  // Enable host checking bypass for development in Replit
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+        ],
+      },
+    ]
   },
 };
 
