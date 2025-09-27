@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     serverActions: {
-      allowedOrigins: "*" // Allow all origins for Replit environment
+      allowedOrigins: [] // Allow all origins for Replit environment
     }
   },
   images: {
