@@ -63,6 +63,12 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
+## Creator Tools / Lab
+
+- Visit [http://localhost:3000/lab](http://localhost:3000/lab) while running the dev server to open the Prompt Lab. A quick-access link appears in the bottom-right corner whenever `NODE_ENV` is not set to production.
+- Provide OpenAI credentials by copying `.env.local.example` to `.env.local` and setting `OPENAI_API_KEY` (and optionally `OPENAI_BASE_URL` if you use a proxy).
+- When no `OPENAI_API_KEY` is configured the lab automatically returns mocked A/B responses with randomized latency and token counts so you can prototype safely without secrets.
+
 ## Deployment
 
 The recommended way to deploy this application is using [Vercel](https://vercel.com), which provides seamless integration with Next.js projects.
