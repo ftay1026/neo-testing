@@ -176,6 +176,62 @@ export function Chat({
       mutateCredits();
     },
   });
+       // ERROR ANALYSIS
+      const currentMessages = [...messages]; // Create snapshot
+      const lastMessage = currentMessages[currentMessages.length - 1];
+      const secondLastMessage = currentMessages[currentMessages.length - 2];
+
+      console.log('Error state analysis:', {
+        errorMessage: error.message,
+        totalMessages: currentMessages.length,
+        lastMessageRole: lastMessage?.role,
+        lastMessageContent: lastMessage?.content?.substring(0, 50) + '...',
+        secondLastMessageRole: secondLastMessage?.role,
+        currentInput: input,
+        status: status
+      });
+
+      // SCENARIO-BASED ERROR HANDLING
+      setMessages(prev => {
+        const prevSnapshot = [...prev];
+        const last = prevSnapshot[prevSnapshot.length - 1];
+        const secondLast = prevSnapshot[prevSnapshot.length - 2];
+
+        // SCENARIO 1: Stream failed before AI response
+        if (last?.role === 'user') {
+          console.log('Scenario 1: Stream failed before AI response');
+          setInput(last.content);
+          return prevSnapshot.slice(0, -1);
+        }
+
+        // SCENARIO 2: Stream failed during AI response OR save failed after completion
+        else if (last?.role === 'assistant' && secondLast?.role === 'user') {
+          console.log('Scenario 2: Stream failed during/after AI response');
+
+          // Check if this was a database save error vs streaming error
+          if (error.message.includes('Failed to save')) {
+            console.log('Database save failed - removing complete conversation turn');
+          } else {
+            console.log('Stream interrupted - removing partial AI response');
+          }
+
+          setInput(secondLast.content);
+          return prevSnapshot.slice(0, -2); // Remove both user and AI messages
+        }
+
+        // SCENARIO 3: Unknown error state
+        else {
+          console.warn('Unknown error state - no automatic recovery');
+          console.log('Message pattern not recognized:', {
+            lastRole: last?.role,
+            secondLastRole: secondLast?.role,
+            messageCount: prevSnapshot.length
+          });
+
+          // Don't modify messages in unknown state
+          return prevSnapshot;
+        }
+      });
 
   // Update chat title if data stream provides a title update
   useEffect(() => {
