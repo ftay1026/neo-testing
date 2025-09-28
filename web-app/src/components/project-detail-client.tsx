@@ -7,15 +7,22 @@ import { ChatHeader } from "@/components/chat-header";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  PlusIcon, 
-  MessageSquareIcon, 
-  FileIcon, 
+import { useSidebar } from '@/components/ui/sidebar';
+import {
+  PlusIcon,
+  MessageSquareIcon,
+  FileIcon,
   FolderIcon,
   ArrowLeftIcon,
   MoreHorizontalIcon,
   EditIcon,
-  TrashIcon
+  TrashIcon,
+  ChevronLeft,
+  ChevronRight,
+  ArrowBigLeft,
+  ArrowBigRight,
+  School,
+  BookOpenText
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
@@ -44,6 +51,7 @@ import type { User } from '@supabase/supabase-js';
 import type { Project, ProjectFile } from '@/types/app.types';
 import { ProjectInteractionLogsSection } from '@/components/project-interaction-logs-section';
 import { getProjectDisplayName } from '@/lib/utils';
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 interface Chat {
   id: string;
@@ -59,20 +67,23 @@ interface ProjectDetailClientProps {
   user: User;
 }
 
-export function ProjectDetailClient({ 
-  initialProject, 
-  initialChats, 
-  initialDocuments, 
-  user 
+export function ProjectDetailClient({
+  initialProject,
+  initialChats,
+  initialDocuments,
+  user
 }: ProjectDetailClientProps) {
   const router = useRouter();
   const { projects, updateProject, deleteProjects } = useProjects();
-  
+  const { open } = useSidebar();
+
   // State management
   const [project, setProject] = useState(initialProject);
   const [chats, setChats] = useState(initialChats);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [projectKnowledgeOpen, setProjectKnowledgeOpen] = useState(false);
 
   const displayName = getProjectDisplayName(project.name, project.is_default);
   const isDefaultProject = project.is_default && project.name === 'Default Project';
@@ -144,7 +155,7 @@ export function ProjectDetailClient({
                   )}
                 </div>
               </div>
-              
+
               {/* Project Actions Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -158,7 +169,7 @@ export function ProjectDetailClient({
                     Edit Project
                   </DropdownMenuItem>
                   {!project.is_default && (
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => setShowDeleteConfirm(true)}
                       className="text-destructive focus:text-destructive"
                     >
@@ -172,16 +183,52 @@ export function ProjectDetailClient({
             {project.description && (
               <div className="">
                 <p className="text-sm text-muted-foreground">{project.description}</p>
-              </div>  
+              </div>
             )}
           </div>
 
           {/* Main content - responsive layout */}
           <div className="flex-1">
             {/* Desktop/Tablet Layout */}
-            <div className="hidden lg:flex mx-auto max-w-7xl p-6 space-x-6">
+            <div className="hidden lg:flex  w-full p-6 space-x-3">
               {/* Left side - Chats */}
-              <div className="flex-1 flex flex-col">
+
+              {/* Interaction Logs Wrapper */}
+              <div className="relative lg:max-w-sm w-[15%] min-w-3xs">
+                {/* Interaction Logs Section */}
+                {!open && (
+                  <div
+                    className={`bg-background/50 rounded-lg h-full ${logOpen ? "block" : "invisible"
+                      }`}
+                  >
+                    <ProjectInteractionLogsSection projectId={project.id} />
+                  </div>
+                )}
+
+                {/* Log Toggle Button */}
+                <div className="absolute -top-1 right-2 z-50">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 border border-white rounded-full flex items-center justify-center"
+                        onClick={() => setLogOpen(!logOpen)}
+                      >
+                        <BookOpenText className="size-6" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      {logOpen ? "Close Logs" : "Open Logs"}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+
+
+
+
+              <div className="flex-1 flex flex-col ">
                 {/* New Chat Section */}
                 <section className="mb-8">
                   <ProjectChat
@@ -189,6 +236,7 @@ export function ProjectDetailClient({
                     projectName={displayName}
                   />
                 </section>
+
 
                 {/* Chats Section */}
                 <section className="flex-1">
@@ -198,7 +246,7 @@ export function ProjectDetailClient({
                       Chats ({chats.length})
                     </h2>
                   </div>
-                  
+
                   {chats.length === 0 ? (
                     <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
                       <MessageSquareIcon className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
@@ -235,16 +283,43 @@ export function ProjectDetailClient({
                 </section>
               </div>
 
-              {/* Right sidebar - Project Files */}
-              <div className="w-80 space-y-6">
-                <div className="border border-border/40 bg-background/50 rounded-lg">
-                  <ProjectFilesSection projectId={project.id} />
+
+
+
+
+
+              {/* Right sidebar wrapper */}
+              <div className="relative max-w-sm w-[15%] min-w-3xs">
+                {/* Toggle Button */}
+                <div className="absolute -top-1 left-2 z-50">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 border border-white rounded-full flex items-center justify-center"
+                        onClick={() => setProjectKnowledgeOpen(!projectKnowledgeOpen)}
+                      >
+                        <School className="size-6" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      {projectKnowledgeOpen ? "Close Knowledge" : "Open Knowledge"}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
-                <div className="border border-border/40 bg-background/50 rounded-lg">
-                  <ProjectInteractionLogsSection projectId={project.id} />
-                </div>
+                {/* Project Files Section */}
+                {!open && (
+                  <div
+                    className={`rounded-lg ${projectKnowledgeOpen ? "block" : "invisible"
+                      }`}
+                  >
+                    <ProjectFilesSection projectId={project.id} />
+                  </div>
+                )}
               </div>
+
             </div>
 
             {/* Mobile Layout */}
@@ -265,7 +340,7 @@ export function ProjectDetailClient({
                     Chats ({chats.length})
                   </h2>
                 </div>
-                
+
                 {chats.length === 0 ? (
                   <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
                     <MessageSquareIcon className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
@@ -315,6 +390,7 @@ export function ProjectDetailClient({
                 </div>
               </section>
             </div>
+
           </div>
         </div>
       </div>
@@ -333,7 +409,7 @@ export function ProjectDetailClient({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{displayName}" and all its associated chats and files. 
+              This will permanently delete "{displayName}" and all its associated chats and files.
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

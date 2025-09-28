@@ -3,11 +3,14 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useInteractionLogs } from '@/hooks/use-interaction-logs'
-import { 
-  FileTextIcon, 
-  MoreHorizontalIcon, 
+import {
+  FileTextIcon,
+  MoreHorizontalIcon,
   TrashIcon,
-  BookOpenIcon 
+  BookOpenIcon,
+  ArrowBigRight,
+  ArrowBigLeft,
+  BookOpenText
 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { InteractionLogPreviewDialog } from '@/components/interaction-log-preview-dialog';
@@ -30,6 +33,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import type { InteractionLog } from '@/types/app.types'
 import { formatToUserTimezone, TimeDisplay } from '@/lib/date-utils';
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 interface ProjectInteractionLogsSectionProps {
   projectId: string;
@@ -37,12 +41,14 @@ interface ProjectInteractionLogsSectionProps {
 }
 
 export function ProjectInteractionLogsSection({ projectId, isMobile = false }: ProjectInteractionLogsSectionProps) {
-  const { logs, isLoading, isError, deleteLog, lastLoggedAt } = useInteractionLogs(projectId);
-  
+  const {logs, isLoading, isError, deleteLog, lastLoggedAt } = useInteractionLogs(projectId);
+
+ 
   // Dialog states
   const [selectedLog, setSelectedLog] = useState<InteractionLog | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [logToDelete, setLogToDelete] = useState<number | null>(null);
+
 
   const handleViewLog = (log: InteractionLog) => {
     setSelectedLog(log);
@@ -99,23 +105,23 @@ export function ProjectInteractionLogsSection({ projectId, isMobile = false }: P
         {logs.map((log) => (
           <div
             key={log.id}
-            className="group border border-border/40 rounded-lg p-3 hover:shadow-sm transition-all duration-200"
+            className="group h-20 border border-border/40 rounded-lg p-3 hover:shadow-sm transition-all duration-200"
           >
-            <div className="flex items-start justify-between mb-2">
-              <div 
+            <div className="flex items-start justify-between ">
+              <div
                 className="flex-1 cursor-pointer"
                 onClick={() => handleViewLog(log)}
               >
                 <h4 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
-                  {log.title}
+                  {formatToUserTimezone(log.log_period_start, 'MMM d')} - {formatToUserTimezone(log.log_period_end, 'MMM d')}
                 </h4>
               </div>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                   >
                     <MoreHorizontalIcon className="h-3 w-3" />
@@ -126,7 +132,7 @@ export function ProjectInteractionLogsSection({ projectId, isMobile = false }: P
                     <FileTextIcon className="h-4 w-4 mr-2" />
                     View
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => {
                       setLogToDelete(log.id);
                       setShowDeleteConfirm(true);
@@ -139,23 +145,14 @@ export function ProjectInteractionLogsSection({ projectId, isMobile = false }: P
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            
-            <div className="flex items-center justify-between">
+
+            <div className="flex flex-col text-xs text-muted-foreground">
+              {/* Show log period with tooltip */}
+              <div className='line-clamp-1 '>
+                {log.title}
+              </div>
               {/* Use timezone-aware time display */}
               <TimeDisplay timestamp={log.created_at} />
-              
-              {/* Show log period with tooltip */}
-              <div className="flex items-center gap-2">
-                <span 
-                  title={`Log covers: ${formatToUserTimezone(log.log_period_start, 'PPp')} to ${formatToUserTimezone(log.log_period_end, 'PPp')}`}
-                  className="text-xs text-muted-foreground"
-                >
-                  {formatToUserTimezone(log.log_period_start, 'MMM d')} - {formatToUserTimezone(log.log_period_end, 'MMM d')}
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  LOG
-                </Badge>
-              </div>
             </div>
           </div>
         ))}
@@ -165,19 +162,19 @@ export function ProjectInteractionLogsSection({ projectId, isMobile = false }: P
 
   return (
     <>
-      <div className={`flex flex-col p-4`}>
+      <div className={`flex flex-col`}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <BookOpenIcon className="h-5 w-5 text-muted-foreground" />
+        <div className={`flex items-center justify-between mb-2`}>
+          <div className={`flex items-center gap-2`}>
             <h2 className="font-semibold">Interaction Logs</h2>
           </div>
+          
         </div>
 
         {/* Last logged info */}
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">
-            {lastLoggedAt 
+            {lastLoggedAt
               ? `Last logged: ${formatToUserTimezone(lastLoggedAt)}`
               : 'No logs created yet'
             }

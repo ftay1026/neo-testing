@@ -13,6 +13,7 @@ export const getUser = cache(async (supabase: SupabaseClient<Database>) => {
   const {
     data: { user }
   } = await supabase.auth.getUser();
+  console.log('getUser - user:', user)
   return user;
 });
 
@@ -223,7 +224,7 @@ export async function getProjectById(supabase: SupabaseClient<Database>, project
     .select('id, name, description, is_default, created_at, updated_at')
     .eq('id', projectId)
     .single();
-
+  console.log('getProjectById - projectId:', projectId, 'data:', data, 'error:', error)
   if (error) throw error;
   return data;
 }

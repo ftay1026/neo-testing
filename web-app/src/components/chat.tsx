@@ -14,7 +14,7 @@ import { useCredits } from "@/hooks/use-credits";
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from './ui/button';
-import { BookCopyIcon } from 'lucide-react';
+import { BookCopyIcon, BookOpenText, School } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -57,12 +57,15 @@ export function Chat({
 }: ChatProps) {
   const { mutate } = useSWRConfig();
   const { mutate: mutateCredits } = useCredits();
+  
 
   const [mode, setMode] = useState<ModeType>(initialMode);
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
   const [chatTitle, setChatTitle] = useState(initialChatTitle || 'Untitled');
   const autoSubmitRef = useRef(false);
   const [clientNewMessage, setClientNewMessage] = useState<UIMessage | null>(null);
+  const [logOpen, setLogOpen] = useState(false);
+  const [projectKnowledgeOpen, setProjectKnowledgeOpen] = useState(false);
 
   // Handle localStorage retrieval on client-side
   useEffect(() => {
@@ -70,17 +73,17 @@ export function Chat({
       try {
         const storedMessage = localStorage.getItem(`initial-message-${id}`);
         const storedMode = localStorage.getItem(`initial-mode-${id}`) as ModeType;
-        
+
         if (storedMessage) {
           // Clean up localStorage immediately
           localStorage.removeItem(`initial-message-${id}`);
           localStorage.removeItem(`initial-mode-${id}`);
-          
+
           // Set the mode if it was stored
           if (storedMode) {
             setMode(storedMode);
           }
-          
+
           // Create the message object
           const messageObj: UIMessage = {
             id: generateUUID(),
@@ -90,9 +93,9 @@ export function Chat({
             createdAt: new Date(),
             experimental_attachments: [],
           };
-          
+
           setClientNewMessage(messageObj);
-          
+
           console.log('Retrieved message from localStorage:', storedMessage.substring(0, 100) + '...');
         }
       } catch (error) {
@@ -101,6 +104,25 @@ export function Chat({
       }
     }
   }, [id, isNewChat]);
+
+  const closeSideBarHandler=()=>{
+   logOpen && setLogOpen(!logOpen);
+    projectKnowledgeOpen &&  setProjectKnowledgeOpen(!projectKnowledgeOpen);
+  }
+
+  useEffect(() => {
+  const handleEscapeKey = (event: { key: string; }) => {
+    if (event.key === 'Escape') {
+      if (logOpen) setLogOpen(false);
+      if (projectKnowledgeOpen) setProjectKnowledgeOpen(false);
+    }
+  };
+  
+  if (logOpen || projectKnowledgeOpen) {
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }
+}, [logOpen, projectKnowledgeOpen]);
 
   const handleModeChange = (newMode: ModeType) => {
     setMode(newMode);
@@ -158,10 +180,10 @@ export function Chat({
   // Update chat title if data stream provides a title update
   useEffect(() => {
     if (data && Array.isArray(data)) {
-      const titleUpdate = data.find((item): item is { type: string; title: string } => 
-        typeof item === 'object' && 
-        item !== null && 
-        'type' in item && 
+      const titleUpdate = data.find((item): item is { type: string; title: string } =>
+        typeof item === 'object' &&
+        item !== null &&
+        'type' in item &&
         'title' in item &&
         (item as any).type === 'title-update' &&
         typeof (item as any).title === 'string'
@@ -193,19 +215,19 @@ export function Chat({
       hasAutoSubmitted
     });
 
-    if (isNewChat && 
-        clientNewMessage &&
-        clientNewMessage.role === 'user' && 
-        status === 'ready' && 
-        !hasAutoSubmitted) {
-      
+    if (isNewChat &&
+      clientNewMessage &&
+      clientNewMessage.role === 'user' &&
+      status === 'ready' &&
+      !hasAutoSubmitted) {
+
       console.log('Auto-submitting new chat message');
       console.log('User message:', clientNewMessage.content);
-      
+
       console.log('🚀 APPENDING MESSAGE - Execution time:', new Date().toISOString());
       autoSubmitRef.current = true;
       setHasAutoSubmitted(true);
-      
+
       // Append the message to trigger AI response
       append({
         id: clientNewMessage.id,
@@ -262,6 +284,10 @@ export function Chat({
         setMessages={setMessages}
         reload={reload}
         isReadonly={false}
+        isLogOpen={logOpen}
+        isProjectKnowledgeOpen={projectKnowledgeOpen}
+        projectId={projectId}
+        closeSideBar={closeSideBarHandler}
       />
 
       {
@@ -269,8 +295,8 @@ export function Chat({
           <div className="text-center text-sm text-red-600 mb-2">
             {error.message.includes('Overloaded') ? (
               <>
-              <p>The server is currently overloaded. Please try again later.</p>
-              <Button variant="link" onClick={() => reload()}>Try Again</Button>
+                <p>The server is currently overloaded. Please try again later.</p>
+                <Button variant="link" onClick={() => reload()}>Try Again</Button>
               </>
             ) : (
               <p>Error: {error.message}</p>
@@ -279,23 +305,62 @@ export function Chat({
         )
       }
 
-      <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
-        {!isReadonly && (
-          <ChatInput
-            chatId={id}
-            input={input}
-            setInput={setInput}
-            mode={mode}
-            handleModeChange={handleModeChange}
-            handleSubmit={handleSubmit}
-            status={status}
-            stop={stop}
-            messages={messages}
-            setMessages={setMessages}
-            projectId={projectId}
-          />
-        )}
-      </form>
+      <div className='flex justify-center '>
+        {/* Log Toggle Button*/}
+        <div className="mb-8  flex self-baseline-last">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 border border-white rounded-full flex flex-col items-center justify-center"
+                onClick={() => setLogOpen(!logOpen)}
+              >
+                <BookOpenText className='size-6' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {logOpen ? "Close Logs" : "Open Logs"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <form className="flex  px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
+          {!isReadonly && (
+            <ChatInput
+              chatId={id}
+              input={input}
+              setInput={setInput}
+              mode={mode}
+              handleModeChange={handleModeChange}
+              handleSubmit={handleSubmit}
+              status={status}
+              stop={stop}
+              messages={messages}
+              setMessages={setMessages}
+              projectId={projectId}
+            />
+          )}
+        </form>
+        {/*Knowledge Toggle Button */}
+        <div className="flex items-baseline-last mb-8">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 border  border-white rounded-full flex flex-col items-center justify-center"
+                onClick={() => setProjectKnowledgeOpen(!projectKnowledgeOpen)}
+              >
+                <School className=' size-6' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              {projectKnowledgeOpen ? "Close Knowledge" : "Open Knowledge"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
     </div>
   );
 }

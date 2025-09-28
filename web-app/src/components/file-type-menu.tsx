@@ -18,7 +18,7 @@ export function FileTypeMenu({ onCreateTextFile, onImportGoogleDoc }: FileTypeMe
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="ghost">
           <PlusIcon className="w-4 h-4" />
         </Button>
       </DropdownMenuTrigger>
