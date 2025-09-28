@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Montagu_Slab, Quicksand } from "next/font/google"
 import "./globals.css";
@@ -43,6 +44,16 @@ export default function RootLayout({
         className={`${montaguSlab.variable} ${quicksand.variable} font-sans antialiased dark`}
       >
         <Toaster position="top-center" />
+        {process.env.NODE_ENV !== "production" ? (
+          <div className="fixed bottom-4 right-4 z-50">
+            <Link
+              href="/lab"
+              className="rounded-md border border-border bg-background/90 px-3 py-1 text-sm font-medium shadow-md backdrop-blur transition hover:bg-background"
+            >
+              Prompt Lab
+            </Link>
+          </div>
+        ) : null}
         {children}
       </body>
     </html>
