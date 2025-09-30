@@ -99,6 +99,7 @@ function PureMultimodalInput({
 
   // Add memory-related state
   const [isMemoryMode, setIsMemoryMode] = useState(false);
+  const isMemoryModeRef = useRef(false);
   const [showMemoryDialog, setShowMemoryDialog] = useState(false);
   const [extractedMemory, setExtractedMemory] = useState<{
     title: string;
@@ -114,6 +115,11 @@ function PureMultimodalInput({
       adjustHeight();
     }
   }, []);
+
+  // Keep memory mode ref in sync with state
+  useEffect(() => {
+    isMemoryModeRef.current = isMemoryMode;
+  }, [isMemoryMode]);
 
   const adjustHeight = () => {
     if (textareaRef.current) {
@@ -209,7 +215,7 @@ function PureMultimodalInput({
     if (e) e.preventDefault();
 
     // Handle memory extraction if in memory mode
-    if (isMemoryMode && input.trim()) {
+    if (isMemoryModeRef.current && input.trim()) {
       try {
         const extracted = await extractMemoryFromMessage(input);
         
