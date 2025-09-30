@@ -7,7 +7,7 @@ import {
   generateText,
   Message
 } from 'ai';
-import { systemPrompt } from '@/lib/ai/prompts';
+import { primingPrompt, systemPrompt } from '@/lib/ai/prompts';
 import {
   getChatById,
   saveChat,
@@ -271,9 +271,27 @@ export async function POST(request: Request) {
     }
 
     // Update the system prompt with document context and chat summary
-    const enhancedSystemPrompt = (documentContext || chatSummaryContext || memoryContext)
-      ? `${systemPrompt(mode ?? null)}\n\n${chatSummaryContext}\n\n${memoryContext}\n\n${documentContext}`
+    const enhancedSystemPrompt = (chatSummaryContext)
+      ? `${systemPrompt(mode ?? null)}\n\n${chatSummaryContext}`
       : systemPrompt(mode ?? null);
+
+    const contextMessageContent: string = `Below is some context found to help provide better responses to the user:\n\n\n${memoryContext}\n\n\n${documentContext}`;
+
+    // Assistant message to provide context from documents and memories
+    const contextMessageFromAssistant: UIMessage = {
+      role: 'assistant',
+      content: contextMessageContent,
+      id: 'assistant-context-message',
+      parts: [
+        { type: 'text', text: contextMessageContent }
+      ]
+    };
+
+    // Add context message as system message at the end of existing messages
+    const messagesWithContext: UIMessage[] = (memoryContext || documentContext) ? [
+      ...messages,
+      contextMessageFromAssistant
+    ] : messages;
 
     // Process the individual messages to add dynamic user prompt to it based on COACH_TEXT_PREFIX
     // Check if individual message content start with COACH_TEXT_Prefix, if yes then call enhancedUserMessage with mode
@@ -308,12 +326,20 @@ export async function POST(request: Request) {
 
     // console.log('Processed messages for chat completion:', processedMessages);
 
+    console.log('length of user messages being sent to model:', messagesWithContext.filter(m => m.role === 'user').length);
+    
+    // processed messages with priming prompt added as system message at the start only if there is only one user message (first message in chat)
+    const processedMessages: UIMessage[] = (messagesWithContext.filter(m => m.role === 'user').length === 1) ? [
+      { role: 'system', content: primingPrompt(new Date().toLocaleDateString()), id: 'system-priming-prompt', parts: [{ type: 'text', text: primingPrompt(new Date().toLocaleDateString()) }] },
+      ...messagesWithContext,
+    ] : messagesWithContext;
+
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
           model: anthropic('claude-sonnet-4-20250514'),
           system: enhancedSystemPrompt,
-          messages,
+          messages: processedMessages,
           maxSteps: 5,
           experimental_activeTools: [],
           experimental_transform: smoothStream({ chunking: 'word' }),
