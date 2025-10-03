@@ -97,7 +97,7 @@ export function LabClient() {
   };
 
   const handleLoadDefault = (panel: 'a' | 'b') => {
-    const defaultPrompt = systemPrompt(null);
+    const defaultPrompt = systemPrompt('coach');
     if (panel === 'a') {
       setPromptA(defaultPrompt);
       setNameA('Default System Prompt');
