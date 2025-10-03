@@ -32,6 +32,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { ModeType } from '@/types/app.types';
 import { calculateRequiredCredits } from '@/lib/credits';
 import { chatTitleGenerationPrompt } from '@/lib/ai/prompts';
+import { getUsedPromptByType } from '@/utils/supabase/queries-lab';
 
 export const maxDuration = 60;
 
@@ -270,10 +271,13 @@ export async function POST(request: Request) {
       chatSummaryContext = `\n---\nPrevious conversation context:\n${chatSummary}\n\nThe user wants to continue this conversation. Use this context to maintain continuity while responding to their current message.\n---\n\n`;
     }
 
+    const usedPrompt = await getUsedPromptByType(supabase, 'system');
+    const baseCoachPrompt = usedPrompt?.prompt || systemPrompt('coach');
+
     // Update the system prompt with document context and chat summary
     const enhancedSystemPrompt = (chatSummaryContext)
-      ? `${systemPrompt(mode ?? null)}\n\n${chatSummaryContext}`
-      : systemPrompt(mode ?? null);
+      ? `${mode === 'coach' ? baseCoachPrompt : systemPrompt(mode ?? null)}\n\n${chatSummaryContext}`
+      : mode === 'coach' ? baseCoachPrompt : systemPrompt(mode ?? null);
 
     const contextMessageContent: string = `Below is some context found to help provide better responses to the user:\n\n\n${memoryContext}\n\n\n${documentContext}`;
 
