@@ -106,3 +106,11 @@ export const getProjectDisplayName = (name: string, isDefault: boolean): string 
 export const isGeneralChatsProject = (name: string, isDefault: boolean): boolean => {
   return isDefault && name === 'Default Project';
 };
+
+// Check if the user is an admin based on their email
+export function isAdminUser(email: string | undefined | null): boolean {
+  if (!email) return false;
+  
+  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+  return adminEmails.includes(email.toLowerCase());
+}
