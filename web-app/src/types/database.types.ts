@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.4"
   }
   graphql_public: {
     Tables: {
@@ -508,6 +508,108 @@ export type Database = {
           is_default?: boolean
           name?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      prompt_comparisons: {
+        Row: {
+          created_at: string
+          id: string
+          max_tokens: number
+          model_a: string
+          model_b: string
+          notes: string | null
+          prompt_a_id: string
+          prompt_b_id: string
+          response_a: string
+          response_b: string
+          temperature: number
+          updated_at: string
+          user_id: string
+          user_prompt: string
+          vote_result: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_tokens: number
+          model_a: string
+          model_b: string
+          notes?: string | null
+          prompt_a_id: string
+          prompt_b_id: string
+          response_a: string
+          response_b: string
+          temperature: number
+          updated_at?: string
+          user_id?: string
+          user_prompt: string
+          vote_result?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_tokens?: number
+          model_a?: string
+          model_b?: string
+          notes?: string | null
+          prompt_a_id?: string
+          prompt_b_id?: string
+          response_a?: string
+          response_b?: string
+          temperature?: number
+          updated_at?: string
+          user_id?: string
+          user_prompt?: string
+          vote_result?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_comparisons_prompt_a_id_fkey"
+            columns: ["prompt_a_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_comparisons_prompt_b_id_fkey"
+            columns: ["prompt_b_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          prompt: string
+          type: string
+          updated_at: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          prompt: string
+          type?: string
+          updated_at?: string
+          used?: boolean
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          prompt?: string
+          type?: string
+          updated_at?: string
+          used?: boolean
           user_id?: string
         }
         Relationships: []

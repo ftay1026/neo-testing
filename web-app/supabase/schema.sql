@@ -547,10 +547,6 @@ CREATE TABLE IF NOT EXISTS "public"."chats" (
 ALTER TABLE "public"."chats" OWNER TO "postgres";
 
 
-COMMENT ON COLUMN "public"."chats"."inheritance_summary" IS 'Snapshot summary of parent chat content at the time this chat was inherited';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."credit_transactions" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "customer_id" "text" NOT NULL,
@@ -620,9 +616,9 @@ CREATE TABLE IF NOT EXISTS "public"."documents" (
     "last_modified" timestamp with time zone,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "title" "text",
     "content" "text",
     "is_direct_file" boolean DEFAULT false,
+    "title" "text",
     "project_id" "uuid" NOT NULL,
     CONSTRAINT "documents_file_type_check" CHECK (("file_type" = ANY (ARRAY['text/plain'::"text", 'text/markdown'::"text", 'application/pdf'::"text", 'direct/text'::"text"])))
 );
@@ -775,6 +771,44 @@ CREATE TABLE IF NOT EXISTS "public"."projects" (
 ALTER TABLE "public"."projects" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."prompt_comparisons" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "prompt_a_id" "uuid" NOT NULL,
+    "prompt_b_id" "uuid" NOT NULL,
+    "model_a" "text" NOT NULL,
+    "model_b" "text" NOT NULL,
+    "temperature" numeric NOT NULL,
+    "max_tokens" integer NOT NULL,
+    "user_prompt" "text" NOT NULL,
+    "response_a" "text" NOT NULL,
+    "response_b" "text" NOT NULL,
+    "vote_result" "text",
+    "notes" "text",
+    "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "prompt_comparisons_vote_result_check" CHECK (("vote_result" = ANY (ARRAY['a'::"text", 'b'::"text", 'tie'::"text"])))
+);
+
+
+ALTER TABLE "public"."prompt_comparisons" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."prompts" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "type" "text" DEFAULT 'system'::"text" NOT NULL,
+    "name" "text" DEFAULT ("now"())::"text" NOT NULL,
+    "prompt" "text" NOT NULL,
+    "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
+    "used" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."prompts" OWNER TO "postgres";
+
+
 ALTER TABLE ONLY "public"."chats"
     ADD CONSTRAINT "chats_pkey" PRIMARY KEY ("id");
 
@@ -870,6 +904,16 @@ ALTER TABLE ONLY "public"."projects"
 
 
 
+ALTER TABLE ONLY "public"."prompt_comparisons"
+    ADD CONSTRAINT "prompt_comparisons_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."prompts"
+    ADD CONSTRAINT "prompts_pkey" PRIMARY KEY ("id");
+
+
+
 CREATE INDEX "chats_project_id_idx" ON "public"."chats" USING "btree" ("project_id");
 
 
@@ -947,6 +991,18 @@ CREATE INDEX "memory_sections_embedding_idx" ON "public"."memory_sections" USING
 
 
 CREATE UNIQUE INDEX "projects_user_default_unique" ON "public"."projects" USING "btree" ("user_id") WHERE ("is_default" = true);
+
+
+
+CREATE INDEX "prompt_comparisons_user_id_idx" ON "public"."prompt_comparisons" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "prompts_type_used_idx" ON "public"."prompts" USING "btree" ("type", "used");
+
+
+
+CREATE INDEX "prompts_user_id_idx" ON "public"."prompts" USING "btree" ("user_id");
 
 
 
@@ -1037,6 +1093,26 @@ ALTER TABLE ONLY "public"."profiles"
 
 ALTER TABLE ONLY "public"."projects"
     ADD CONSTRAINT "projects_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."prompt_comparisons"
+    ADD CONSTRAINT "prompt_comparisons_prompt_a_id_fkey" FOREIGN KEY ("prompt_a_id") REFERENCES "public"."prompts"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."prompt_comparisons"
+    ADD CONSTRAINT "prompt_comparisons_prompt_b_id_fkey" FOREIGN KEY ("prompt_b_id") REFERENCES "public"."prompts"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."prompt_comparisons"
+    ADD CONSTRAINT "prompt_comparisons_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."prompts"
+    ADD CONSTRAINT "prompts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -1138,6 +1214,10 @@ CREATE POLICY "Users can delete their own non-default projects" ON "public"."pro
 
 
 
+CREATE POLICY "Users can delete their own prompts" ON "public"."prompts" FOR DELETE TO "authenticated" USING (("auth"."uid"() = "user_id"));
+
+
+
 CREATE POLICY "Users can insert document sections" ON "public"."document_sections" FOR INSERT TO "authenticated" WITH CHECK (("document_id" IN ( SELECT "documents"."id"
    FROM "public"."documents"
   WHERE ("documents"."user_id" = "auth"."uid"()))));
@@ -1164,6 +1244,10 @@ CREATE POLICY "Users can insert their own chats" ON "public"."chats" FOR INSERT 
 
 
 
+CREATE POLICY "Users can insert their own comparisons" ON "public"."prompt_comparisons" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
 CREATE POLICY "Users can insert their own interaction logs" ON "public"."interaction_logs" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
 
 
@@ -1177,6 +1261,10 @@ CREATE POLICY "Users can insert their own profile." ON "public"."profiles" FOR I
 
 
 CREATE POLICY "Users can insert their own projects" ON "public"."projects" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can insert their own prompts" ON "public"."prompts" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
@@ -1214,6 +1302,10 @@ CREATE POLICY "Users can update their own projects" ON "public"."projects" FOR U
 
 
 
+CREATE POLICY "Users can update their own prompts" ON "public"."prompts" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
 CREATE POLICY "Users can view messages of their own chats" ON "public"."messages" FOR SELECT USING (("chat_id" IN ( SELECT "chats"."id"
    FROM "public"."chats"
   WHERE ("chats"."user_id" = "auth"."uid"()))));
@@ -1221,6 +1313,10 @@ CREATE POLICY "Users can view messages of their own chats" ON "public"."messages
 
 
 CREATE POLICY "Users can view their own chats" ON "public"."chats" FOR SELECT USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can view their own comparisons" ON "public"."prompt_comparisons" FOR SELECT TO "authenticated" USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -1247,6 +1343,10 @@ CREATE POLICY "Users can view their own profile." ON "public"."profiles" FOR SEL
 
 
 CREATE POLICY "Users can view their own projects" ON "public"."projects" FOR SELECT TO "authenticated" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can view their own prompts" ON "public"."prompts" FOR SELECT TO "authenticated" USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -1289,6 +1389,12 @@ ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."projects" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."prompt_comparisons" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."prompts" ENABLE ROW LEVEL SECURITY;
+
+
 GRANT USAGE ON SCHEMA "public" TO "postgres";
 GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
@@ -1296,10 +1402,14 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."add_credits"("p_customer_id" "text", "p_amount" integer, "p_description" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."add_credits"("p_customer_id" "text", "p_amount" integer, "p_description" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."add_credits"("p_customer_id" "text", "p_amount" integer, "p_description" "text") TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."check_and_deduct_credits"("p_customer_id" "text", "p_required_credits" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."check_and_deduct_credits"("p_customer_id" "text", "p_required_credits" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."check_and_deduct_credits"("p_customer_id" "text", "p_required_credits" integer) TO "service_role";
 
 
@@ -1490,30 +1600,42 @@ GRANT ALL ON TABLE "public"."projects" TO "service_role";
 
 
 
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "service_role";
+GRANT ALL ON TABLE "public"."prompt_comparisons" TO "anon";
+GRANT ALL ON TABLE "public"."prompt_comparisons" TO "authenticated";
+GRANT ALL ON TABLE "public"."prompt_comparisons" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."prompts" TO "anon";
+GRANT ALL ON TABLE "public"."prompts" TO "authenticated";
+GRANT ALL ON TABLE "public"."prompts" TO "service_role";
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
 
 
 
 
 
 
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
 
 
 
 
 
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
 
 
