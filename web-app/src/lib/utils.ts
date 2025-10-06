@@ -111,6 +111,6 @@ export const isGeneralChatsProject = (name: string, isDefault: boolean): boolean
 export function isAdminUser(email: string | undefined | null): boolean {
   if (!email) return false;
   
-  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
   return adminEmails.includes(email.toLowerCase());
 }
