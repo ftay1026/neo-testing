@@ -18,7 +18,7 @@ import { usePrompts, useComparisons } from '@/hooks/use-lab';
 import { systemPrompt } from '@/lib/ai/prompts';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { 
+import type {
   VoteResult,
   ComparisonRunResult,
   Prompt,
@@ -49,7 +49,12 @@ export function LabClient() {
   const [promptAId, setPromptAId] = useState<string>('');
   const [promptBId, setPromptBId] = useState<string>('');
 
-  const { prompts, createPrompt, updatePrompt } = usePrompts(promptType);
+  // Saved Priming Prompt
+  const [primingPromptA, setPrimingPromptA] = useState('');
+  const [primingPromptB, setPrimingPromptB] = useState('');
+
+
+  const { prompts, createPrompt, updatePrompt, deletePrompt } = usePrompts(promptType);
   const { saveComparison, runComparison } = useComparisons();
 
   const usedPrompt: Prompt | undefined = prompts.find((p) => p.used);
@@ -62,6 +67,39 @@ export function LabClient() {
       setPromptAId(usedPrompt.id);
     }
   }, [usedPrompt]);
+
+
+  const handleDeletePrompt = async (panel: 'a' | 'b', id: string) => {
+    try {
+      await deletePrompt(id); // call the delete route via hook
+      toast.success('Prompt deleted successfully');
+
+      // clear the panel if the deleted prompt was loaded there
+      if (panel === 'a' && promptAId === id) {
+        setPromptA('');
+        setNameA('');
+        setPromptAId('');
+      } else if (panel === 'b' && promptBId === id) {
+        setPromptB('');
+        setNameB('');
+        setPromptBId('');
+      }
+    } catch (error) {
+      console.error('Error deleting prompt:', error);
+      toast.error('Failed to delete prompt');
+    }
+  };
+
+  const handleEditPromptName = async (panel: 'a' | 'b', id: string, newName: string) => {
+    try {
+      await updatePrompt(id, { name: newName });
+      toast.success('Prompt name updated successfully');
+    } catch (error) {
+      console.error('Error updating prompt name:', error);
+      toast.error('Failed to update prompt name');
+    }
+  };
+
 
   const handleSavePrompt = async (panel: 'a' | 'b') => {
     const name = panel === 'a' ? nameA : nameB;
@@ -159,7 +197,7 @@ export function LabClient() {
   };
 
   const handleRunComparison = async () => {
-    if (!promptA || !promptB || !userPrompt) {
+    if (!promptA || !promptB || !userPrompt || !primingPromptA || !primingPromptB) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -254,20 +292,8 @@ export function LabClient() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Lab</h1>
+        <h1 className="text-3xl font-bold">Prompt Lab</h1>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="prompt-type">Type:</Label>
-            <Select value={promptType} onValueChange={setPromptType}>
-              <SelectTrigger id="prompt-type" className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="system">System Prompt</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="flex items-center gap-2">
             <Label htmlFor="temperature">Temperature:</Label>
             <Input
@@ -305,6 +331,8 @@ export function LabClient() {
           setName={setNameA}
           prompt={promptA}
           setPrompt={setPromptA}
+          primingPrompt={primingPromptA}
+          setPrimingPrompt={setPrimingPromptA}
           model={modelA}
           setModel={setModelA}
           savedPrompts={prompts}
@@ -314,6 +342,8 @@ export function LabClient() {
           onLoadDefault={() => handleLoadDefault('a')}
           onLoadUsed={() => handleLoadUsed('a')}
           onUsePrompt={() => handleUsePrompt('a')}
+          onDeletePrompt={(id) => handleDeletePrompt('a', id)}
+          onEditPromptName={(id, newName) => handleEditPromptName('a', id, newName)}
           promptType={promptType}
         />
 
@@ -323,6 +353,8 @@ export function LabClient() {
           setName={setNameB}
           prompt={promptB}
           setPrompt={setPromptB}
+          primingPrompt={primingPromptB}
+          setPrimingPrompt={setPrimingPromptB}
           model={modelB}
           setModel={setModelB}
           savedPrompts={prompts}
@@ -332,6 +364,8 @@ export function LabClient() {
           onLoadDefault={() => handleLoadDefault('b')}
           onLoadUsed={() => handleLoadUsed('b')}
           onUsePrompt={() => handleUsePrompt('b')}
+          onDeletePrompt={(id) => handleDeletePrompt('b', id)}
+          onEditPromptName={(id, newName) => handleEditPromptName('b', id, newName)}
           promptType={promptType}
         />
       </div>

@@ -80,6 +80,8 @@ export interface PromptPanelProps {
   setName: (name: string) => void;
   prompt: string;
   setPrompt: (prompt: string) => void;
+  primingPrompt: string;
+  setPrimingPrompt: (primingPrompt: string) => void;
   model: string;
   setModel: (model: string) => void;
   savedPrompts: Prompt[];
@@ -89,6 +91,8 @@ export interface PromptPanelProps {
   onLoadDefault: () => void;
   onLoadUsed: () => void;
   onUsePrompt: () => Promise<void>;
+  onDeletePrompt?: (id: string) => void;
+  onEditPromptName?: (id: string, newName: string) => Promise<void>;
   promptType: string;
 }
 
