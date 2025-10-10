@@ -41,6 +41,7 @@ export async function createPrompt(
     type: string;
     name: string;
     prompt: string;
+    primingPrompt: string;
     used?: boolean;
   }
 ) {

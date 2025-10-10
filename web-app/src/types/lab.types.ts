@@ -37,6 +37,7 @@ export interface CreatePromptData {
   type: string;
   name: string;
   prompt: string;
+  primingPrompt: string;
   used?: boolean;
 }
 
@@ -50,6 +51,8 @@ export interface UpdatePromptData {
 export interface RunComparisonParams {
   promptA: string;
   promptB: string;
+  primingPromptA: string;
+  primingPromptB: string;
   modelA: string;
   modelB: string;
   temperature: number;

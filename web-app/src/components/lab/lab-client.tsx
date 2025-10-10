@@ -7,13 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { usePrompts, useComparisons } from '@/hooks/use-lab';
 import { systemPrompt } from '@/lib/ai/prompts';
 import { Loader2 } from 'lucide-react';
@@ -104,11 +97,13 @@ export function LabClient() {
   const handleSavePrompt = async (panel: 'a' | 'b') => {
     const name = panel === 'a' ? nameA : nameB;
     const prompt = panel === 'a' ? promptA : promptB;
+    const primingPrompt = panel ==='a' ? primingPromptA : primingPromptB;
 
     const newPrompt = await createPrompt({
       type: promptType,
       name,
       prompt,
+      primingPrompt,
       used: false,
     });
 
@@ -127,10 +122,12 @@ export function LabClient() {
       setPromptA(saved.prompt);
       setNameA(saved.name);
       setPromptAId(saved.id);
+      setPrimingPromptA(saved.primingPrompt)
     } else {
       setPromptB(saved.prompt);
       setNameB(saved.name);
       setPromptBId(saved.id);
+      setPrimingPromptB(saved.primingPrompt)
     }
   };
 
@@ -140,10 +137,12 @@ export function LabClient() {
       setPromptA(defaultPrompt);
       setNameA('Default System Prompt');
       setPromptAId('');
+      setPrimingPromptA('')
     } else {
       setPromptB(defaultPrompt);
       setNameB('Default System Prompt');
       setPromptBId('');
+      setPrimingPromptB('')
     }
   };
 
@@ -154,10 +153,12 @@ export function LabClient() {
       setPromptA(usedPrompt.prompt);
       setNameA(usedPrompt.name);
       setPromptAId(usedPrompt.id);
+      setPrimingPromptA(usedPrompt.primingPrompt)
     } else {
       setPromptB(usedPrompt.prompt);
       setNameB(usedPrompt.name);
       setPromptBId(usedPrompt.id);
+      setPrimingPromptA(usedPrompt.primingPrompt)
     }
   };
 
@@ -165,6 +166,7 @@ export function LabClient() {
     const prompt = panel === 'a' ? promptA : promptB;
     const name = panel === 'a' ? nameA : nameB;
     let promptId = panel === 'a' ? promptAId : promptBId;
+    const primingPrompt = panel === 'a' ? primingPromptA : primingPromptB;
 
     if (!prompt.trim()) {
       toast.error('Prompt cannot be empty');
@@ -181,6 +183,7 @@ export function LabClient() {
         type: promptType,
         name: name || 'Unnamed Prompt',
         prompt,
+        primingPrompt,
         used: false,
       });
       promptId = newPrompt.id;
@@ -210,6 +213,8 @@ export function LabClient() {
       const result = await runComparison({
         promptA,
         promptB,
+        primingPromptA,
+        primingPromptB,
         modelA,
         modelB,
         temperature,
