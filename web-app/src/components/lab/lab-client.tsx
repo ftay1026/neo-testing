@@ -250,6 +250,7 @@ export function LabClient() {
           type: promptType,
           name: nameA || 'Unnamed Prompt A',
           prompt: promptA,
+          primingPrompt: primingPromptA,
           used: false,
         });
         finalPromptAId = newPromptA.id;
@@ -267,6 +268,7 @@ export function LabClient() {
           type: promptType,
           name: nameB || 'Unnamed Prompt B',
           prompt: promptB,
+          primingPrompt:primingPromptB,
           used: false,
         });
         finalPromptBId = newPromptB.id;
