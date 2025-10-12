@@ -1,6 +1,8 @@
 // /app/api/projects/[id]/files/route.ts
 import { createClient } from '@/utils/supabase/server';
 import { getUser } from '@/utils/supabase/queries';
+import type { Database, Json } from '@/types/database.types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { processProjectFile, prepareChunksForDatabase } from '@/lib/services/content-processing';
 
 export async function GET(
@@ -9,7 +11,7 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = await params;
-    const supabase = await createClient();
+    const supabase: SupabaseClient<Database> = await createClient();
     const user = await getUser(supabase);
 
     if (!user || !user.id) {
@@ -54,7 +56,7 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await params;
-    const supabase = await createClient();
+    const supabase: SupabaseClient<Database> = await createClient();
     const user = await getUser(supabase);
 
     if (!user?.id) {
@@ -81,8 +83,8 @@ export async function POST(
 
     console.log(`📝 Processing content for: ${title}`);
 
-    // Use centralized content processing service
-    const processed = await processProjectFile(content || '');
+    // Use centralized content processing service to chunk the content and generate embeddings
+    const processed = await processProjectFile(content || '', { maxChunkSize: 3000, overlapRatio: 0.6 });
     
     console.log(`📦 Processed ${processed.contentType} content into ${processed.chunks.length} searchable chunks`);
 
@@ -96,7 +98,7 @@ export async function POST(
         p_user_id: user.id,
         p_title: title.trim(),
         p_content: processed.originalContent, // Store original (HTML) for display
-        p_chunks: dbChunks, // Store cleaned chunks for search
+        p_chunks: dbChunks as unknown as Json, // Store cleaned chunks for search
         p_project_id: projectId
       }
     );

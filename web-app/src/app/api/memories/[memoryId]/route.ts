@@ -3,60 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { getUser } from '@/utils/supabase/queries';
 import type { Database } from '@/types/database.types';
 import type { SupabaseClient } from '@supabase/supabase-js';
-
-async function generateEmbedding(text: string): Promise<number[]> {
-  try {
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-ada-002',
-        input: text
-      })
-    });
-    
-    const result = await response.json();
-    if (!result.data?.[0]?.embedding) {
-      throw new Error('Invalid response from OpenAI API');
-    }
-    
-    const vector: number[] = result.data[0].embedding;
-    const magnitude = Math.sqrt(vector.reduce((sum: number, val: number) => sum + val * val, 0));
-    return vector.map((val: number) => val / magnitude);
-  } catch (error) {
-    console.error('Error generating embedding:', error);
-    return new Array(1536).fill(0);
-  }
-}
-
-function chunkText(text: string, maxChunkSize = 500, overlapRatio = 0.2) {
-  const chunks = [];
-  let startIndex = 0;
-  
-  while (startIndex < text.length) {
-    let endIndex = startIndex + maxChunkSize;
-    
-    if (endIndex < text.length) {
-      const nextPeriod = text.indexOf('.', endIndex);
-      if (nextPeriod !== -1 && nextPeriod - endIndex < 100) {
-        endIndex = nextPeriod + 1;
-      }
-    }
-    
-    const chunk = text.slice(startIndex, endIndex).trim();
-    if (chunk.length > 0) {
-      chunks.push(chunk);
-    }
-    
-    const overlap = Math.floor(maxChunkSize * overlapRatio);
-    startIndex = endIndex - overlap;
-  }
-  
-  return chunks;
-}
+import { processMemory, prepareChunksForDatabase } from '@/lib/services/content-processing';
 
 export async function PUT(
   request: Request,
@@ -82,18 +29,13 @@ export async function PUT(
       return new Response('Title and content are required', { status: 400 });
     }
 
-    // Generate new embeddings
-    const chunks = chunkText(content);
-    const processedChunks = [];
+    // Use centralized content processing service to chunk the content and generate embeddings
+    const processed = await processMemory(content.trim());
+    
+    console.log(`📦 Processed into ${processed.chunks.length} searchable chunks`);
 
-    for (let i = 0; i < chunks.length; i++) {
-      const embedding = await generateEmbedding(chunks[i]);
-      processedChunks.push({
-        chunk_index: i,
-        content: chunks[i],
-        embedding
-      });
-    }
+    // Prepare chunks for database
+    const dbChunks = prepareChunksForDatabase(processed.chunks);
 
     // Update memory
     const { error: updateError } = await supabase
@@ -119,7 +61,7 @@ export async function PUT(
       .eq('memory_id', memoryIdNumber);
 
     // Insert new chunks
-    for (const chunk of processedChunks) {
+    for (const chunk of dbChunks) {
       await supabase
         .from('memory_sections')
         .insert({

@@ -1,57 +1,9 @@
 // /app/api/projects/[id]/files/[fileId]/route.ts
 import { createClient } from '@/utils/supabase/server';
 import { getUser } from '@/utils/supabase/queries';
-
-// Helper function to chunk text and generate embeddings
-async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-ada-002',
-      input: text
-    })
-  });
-  
-  const result = await response.json();
-  if (!result.data?.[0]?.embedding) {
-    throw new Error('Failed to generate embedding');
-  }
-  
-  // Normalize vector
-  const vector = result.data[0].embedding;
-  const magnitude = Math.sqrt(vector.reduce((sum: number, val: number) => sum + val * val, 0));
-  return vector.map((val: number) => val / magnitude);
-}
-
-function chunkText(text: string, maxChunkSize = 1000, overlapRatio = 0.2) {
-  const chunks = [];
-  let startIndex = 0;
-  
-  while (startIndex < text.length) {
-    let endIndex = startIndex + maxChunkSize;
-    
-    if (endIndex < text.length) {
-      const nextPeriod = text.indexOf('.', endIndex);
-      if (nextPeriod !== -1 && nextPeriod - endIndex < 100) {
-        endIndex = nextPeriod + 1;
-      }
-    }
-    
-    const chunk = text.slice(startIndex, endIndex).trim();
-    if (chunk.length > 0) {
-      chunks.push(chunk);
-    }
-    
-    const overlap = Math.floor(maxChunkSize * overlapRatio);
-    startIndex = endIndex - overlap;
-  }
-  
-  return chunks;
-}
+import type { Database, Json } from '@/types/database.types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { processProjectFile, prepareChunksForDatabase } from '@/lib/services/content-processing';
 
 export async function PUT(
   request: Request,
@@ -59,7 +11,7 @@ export async function PUT(
 ) {
   try {
     const { id: projectId, fileId } = await params;
-    const supabase = await createClient();
+    const supabase: SupabaseClient<Database> = await createClient();
     const user = await getUser(supabase);
 
     if (!user?.id) {
@@ -77,18 +29,13 @@ export async function PUT(
       return new Response('Title is required', { status: 400 });
     }
 
-    // Chunk the content and generate embeddings
-    const chunks = chunkText(content || '');
-    const processedChunks = [];
+    // Use centralized content processing service to chunk the content and generate embeddings
+    const processed = await processProjectFile(content || '', { maxChunkSize: 3000, overlapRatio: 0.6 });
+    
+    console.log(`📦 Processed ${processed.contentType} content into ${processed.chunks.length} searchable chunks`);
 
-    for (let i = 0; i < chunks.length; i++) {
-      const embedding = await generateEmbedding(chunks[i]);
-      processedChunks.push({
-        chunk_index: i,
-        content: chunks[i],
-        embedding
-      });
-    }
+    // Prepare chunks for database
+    const dbChunks = prepareChunksForDatabase(processed.chunks);
 
     // Update file with chunks using the RPC function
     const { error } = await supabase.rpc(
@@ -97,8 +44,8 @@ export async function PUT(
         p_document_id: fileIdNumber,
         p_user_id: user.id,
         p_title: title.trim(),
-        p_content: content || '',
-        p_chunks: processedChunks
+        p_content: processed.originalContent, // Store original (HTML) for display
+        p_chunks: dbChunks as unknown as Json, // Store cleaned chunks for search
       }
     );
 
