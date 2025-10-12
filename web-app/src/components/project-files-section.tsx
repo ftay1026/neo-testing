@@ -137,7 +137,7 @@ export function ProjectFilesSection({ projectId, isMobile = false }: ProjectFile
 
     return (
       <div className='mb-2'>
-       <div className="grid grid-cols-breakpoint gap-4 gap-x-breakpoint">
+       <div className={`grid grid-cols-breakpoint gap-breakpoint ${!isMobile ? "max-w-80" : "max-w-full"} `}>
           {files.map((file) => (
             <div
               key={file.id}
@@ -151,7 +151,7 @@ export function ProjectFilesSection({ projectId, isMobile = false }: ProjectFile
                   <h4 className="font-medium text-xs group-hover:text-primary transition-colors"
                     style={{
                       display: '-webkit-box',
-                      WebkitLineClamp: 2,
+                      WebkitLineClamp: 3,
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
                       wordBreak: 'break-word',
@@ -159,9 +159,9 @@ export function ProjectFilesSection({ projectId, isMobile = false }: ProjectFile
                     }}>
                     {file.title || 'Untitled'}
                   </h4>
-                  <p className="text-[10px] text-muted-foreground ">
+                  {/* <p className="text-[10px] text-muted-foreground ">
                     {formatDistanceToNow(new Date(file.updated_at), { addSuffix: true })}
-                  </p>
+                  </p> */}
                 </div>
 
                 <DropdownMenu>
@@ -203,7 +203,7 @@ export function ProjectFilesSection({ projectId, isMobile = false }: ProjectFile
     <>
       <div className={`flex flex-col p-4`}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className={`flex items-center justify-between mb-4 ${!isMobile ? "max-w-80" : "max-w-full"} `}>
           <div className="flex items-center gap-2">
             <FileIcon className="h-5 w-5 text-muted-foreground" />
             <h2 className="font-semibold">Project knowledge</h2>
