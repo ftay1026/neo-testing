@@ -84,7 +84,7 @@ export async function POST(
     console.log(`📝 Processing content for: ${title}`);
 
     // Use centralized content processing service to chunk the content and generate embeddings
-    const processed = await processProjectFile(content || '', { maxChunkSize: 3000, overlapRatio: 0.6 });
+    const processed = await processProjectFile(content || '', { maxChunkSize: 2000, overlapRatio: 0.2 });
     
     console.log(`📦 Processed ${processed.contentType} content into ${processed.chunks.length} searchable chunks`);
 
