@@ -137,11 +137,11 @@ export function ProjectFilesSection({ projectId, isMobile = false }: ProjectFile
 
     return (
       <div className='mb-2'>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3   gap-2 ">
+       <div className="grid grid-cols-breakpoint gap-4 gap-x-breakpoint">
           {files.map((file) => (
             <div
               key={file.id}
-              className="group border border-border-300/25 bg-[#30302E] h-22 rounded-lg px-2 py-2 hover:shadow-sm transition-all duration-200 w-full flex flex-col"
+              className={`group border border-border-300/25 bg-[#30302E] h-22 rounded-lg px-2 py-2 hover:shadow-sm transition-all duration-200 w-full ${!isMobile ? "md:max-w-24" : "md:w-full"} max-w-full flex flex-col`}
             >
               <div className="flex items-start justify-between mb-2">
                 <div

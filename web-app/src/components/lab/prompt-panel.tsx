@@ -161,11 +161,14 @@ export function PromptPanel({
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" className="w-[200px] justify-between">
-              {selectedSavedId
-                ? savedPrompts.find((p) => p.id === selectedSavedId)?.name
-                : 'Load saved...'}
-              <ChevronDownIcon className="h-4 w-4 ml-2" />
+              <span className="truncate max-w-[150px] text-left">
+                {selectedSavedId
+                  ? savedPrompts.find((p) => p.id === selectedSavedId)?.name
+                  : 'Load saved...'}
+              </span>
+              <ChevronDownIcon className="h-4 w-4 ml-2 shrink-0" />
             </Button>
+
           </PopoverTrigger>
 
           <PopoverContent className="w-[250px] p-2">

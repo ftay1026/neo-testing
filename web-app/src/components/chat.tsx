@@ -351,13 +351,13 @@ export function Chat({
 
       <div className='flex justify-center '>
         {/* Log Toggle Button*/}
-        <div className="mb-8  flex self-baseline-last">
+        <div className="mb-8 mt-1  flex self-baseline-last">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 border border-white rounded-full flex flex-col items-center justify-center"
+                className="h-8 w-8 bg-[#18181b] pt-0.5 rounded-full flex flex-col items-center justify-center"
                 onClick={() => setLogOpen(!logOpen)}
               >
                 <BookOpenText className='size-6' />
@@ -369,7 +369,7 @@ export function Chat({
           </Tooltip>
         </div>
 
-        <form className="flex px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl xl:max-w-[50%]">
+        <form className="flex px-1 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl xl:max-w-[50%]">
           {!isReadonly && (
             <ChatInput
               chatId={id}
@@ -387,13 +387,13 @@ export function Chat({
           )}
         </form>
         {/*Knowledge Toggle Button */}
-        <div className="flex items-baseline-last mb-8">
+        <div className="flex items-baseline-last mt-1 mb-8">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 border  border-white rounded-full flex flex-col items-center justify-center"
+                className="h-8 w-8 bg-[#18181b] rounded-full flex flex-col items-center justify-center"
                 onClick={() => setProjectKnowledgeOpen(!projectKnowledgeOpen)}
               >
                 <School className=' size-6' />
