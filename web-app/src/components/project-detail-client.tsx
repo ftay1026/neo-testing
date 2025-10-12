@@ -190,7 +190,7 @@ export function ProjectDetailClient({
           {/* Main content - responsive layout */}
           <div className="flex-1">
             {/* Desktop/Tablet Layout */}
-            <div className="hidden lg:flex w-full p-6 gap-4">
+            <div className="hidden lg:flex max-w-7xl mx-auto p-6 gap-4">
               {/* Left side - Chats */}
               <div className="flex-1 flex flex-col min-w-0">
                 {/* New Chat Section */}

@@ -155,6 +155,43 @@
     background-color: var(--scrollbar-thumb-hover);
   }
 }
+/* Responsive breakpoints for knowledge section */
+@layer utilities {
+  /* Responsive column gap */
+  .gap-x-breakpoint {
+    column-gap: 0.5rem; /* default: gap-x-2 */
+  }
+  
+  @media (min-width: 1280px) and (max-width: 1649px) {
+    .gap-x-breakpoint {
+      column-gap: 0.5rem; /* gap-x-3 only between xl and 1650px */
+    }
+  }
+
+  /* Responsive grid columns */
+  .grid-cols-breakpoint {
+    grid-template-columns: repeat(1, minmax(0, 1fr)); /* default: 1 column */
+  }
+
+  @media (min-width: 768px) {
+    .grid-cols-breakpoint {
+      grid-template-columns: repeat(2, minmax(0, 1fr)); /* md: 2 columns */
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .grid-cols-breakpoint {
+      grid-template-columns: repeat(3, minmax(0, 1fr)); /* xl: 3 columns */
+    }
+  }
+
+  @media (min-width: 1650px) {
+    .grid-cols-breakpoint {
+      grid-template-columns: repeat(4, minmax(0, 1fr)); /* 1650px: 4 columns */
+    }
+  }
+}
+
 
 /* Add container styles */
 @layer components {
