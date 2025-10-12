@@ -72,10 +72,12 @@ export function LabClient() {
         setPromptA('');
         setNameA('');
         setPromptAId('');
+        setPrimingPromptA('');
       } else if (panel === 'b' && promptBId === id) {
         setPromptB('');
         setNameB('');
         setPromptBId('');
+        setPrimingPromptB('');
       }
     } catch (error) {
       console.error('Error deleting prompt:', error);
