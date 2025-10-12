@@ -12,7 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Save, Check, FileText } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Save,
+  Check,
+  FileText,
+  EditIcon,
+  TrashIcon,
+  ChevronDownIcon,
+  CheckIcon,
+} from 'lucide-react';
 import { labModels } from '@/lib/ai/models';
 import type { PromptPanelProps } from '@/types/lab.types';
 
@@ -22,6 +31,8 @@ export function PromptPanel({
   setName,
   prompt,
   setPrompt,
+  primingPrompt,
+  setPrimingPrompt,
   model,
   setModel,
   savedPrompts,
@@ -31,11 +42,15 @@ export function PromptPanel({
   onLoadDefault,
   onLoadUsed,
   onUsePrompt,
+  onDeletePrompt,
+  onEditPromptName,
   promptType,
 }: PromptPanelProps) {
   const [selectedSavedId, setSelectedSavedId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUsingPrompt, setIsUsingPrompt] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -46,12 +61,41 @@ export function PromptPanel({
     }
   };
 
+  const handleSelect = (id: string) => {
+    setSelectedSavedId(id);
+    onLoadSaved(id);
+  };
+
   const handleUsePrompt = async () => {
     setIsUsingPrompt(true);
     try {
       await onUsePrompt();
     } finally {
       setIsUsingPrompt(false);
+    }
+  };
+
+  const handleEdit = (id: string, currentName: string) => {
+    setEditingId(id);
+    setEditValue(currentName);
+  };
+
+  const handleEditName = async (id: string) => {
+    if (!editValue.trim()) return;
+    await onEditPromptName?.(id, editValue);
+    setEditingId(null);
+    setEditValue('');
+  };
+
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this prompt?')) {
+      await onDeletePrompt?.(id);
+
+      // ✅ If the deleted prompt was selected, reset selection
+      if (selectedSavedId === id) {
+        setSelectedSavedId('');
+      }
     }
   };
 
@@ -92,7 +136,7 @@ export function PromptPanel({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`prompt-${label}`}>Prompt Content</Label>
+        <Label htmlFor={`prompt-${label}`}>System Prompt</Label>
         <Textarea
           id={`prompt-${label}`}
           value={prompt}
@@ -101,32 +145,98 @@ export function PromptPanel({
           className="min-h-[300px] font-mono text-sm"
         />
       </div>
+      <div className="space-y-2">
+        <Label htmlFor={`priming-${label}`}>Priming Prompt</Label>
+        <Textarea
+          id={`priming-${label}`}
+          value={primingPrompt}
+          onChange={(e) => setPrimingPrompt(e.target.value)}
+          placeholder="Enter priming prompt..."
+          className="min-h-[120px] font-mono text-sm"
+        />
+      </div>
+
 
       <div className="flex gap-2 flex-wrap">
-        <Select
-          value={selectedSavedId}
-          onValueChange={(value) => {
-            setSelectedSavedId(value);
-            onLoadSaved(value);
-          }}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Load saved..." />
-          </SelectTrigger>
-          <SelectContent>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[200px] justify-between">
+              {selectedSavedId
+                ? savedPrompts.find((p) => p.id === selectedSavedId)?.name
+                : 'Load saved...'}
+              <ChevronDownIcon className="h-4 w-4 ml-2" />
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent className="w-[250px] p-2">
             {savedPrompts.length === 0 ? (
               <div className="px-2 py-1.5 text-sm text-muted-foreground">
                 No saved prompts
               </div>
             ) : (
-              savedPrompts.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))
+              <ul className="space-y-1">
+                {savedPrompts.map((p) => (
+                  <li
+                    key={p.id}
+                    className={`flex items-center justify-between rounded-md px-2 py-1.5 cursor-pointer hover:bg-muted ${selectedSavedId === p.id ? 'bg-accent' : ''
+                      }`}
+                    onClick={() => handleSelect(p.id)}
+                  >
+                    {editingId === p.id ? (
+                      <div className="flex w-full items-center justify-between gap-2">
+                        <input
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="text-sm border rounded px-1 py-0.5 flex-1"
+                          autoFocus
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-green-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditName(p.id);
+                          }}
+                        >
+                          <CheckIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-sm">{p.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(p.id, p.name);
+                            }}
+                          >
+                            <EditIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(p.id);
+                            }}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
             )}
-          </SelectContent>
-        </Select>
+          </PopoverContent>
+        </Popover>
 
         <Button variant="outline" size="sm" onClick={onLoadDefault}>
           <FileText className="w-4 h-4 mr-2" />

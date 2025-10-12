@@ -587,6 +587,7 @@ export type Database = {
           id: string
           name: string
           prompt: string
+          primingPrompt: string
           type: string
           updated_at: string
           used: boolean

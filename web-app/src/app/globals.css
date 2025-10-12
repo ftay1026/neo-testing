@@ -123,6 +123,39 @@
   }
 }
 
+@layer base {
+  :root {
+    /* Scrollbar variables */
+    --scrollbar-width: 6px;
+    --scrollbar-thumb-color: rgba(120, 120, 120, 0.5);
+    --scrollbar-thumb-hover: rgba(120, 120, 120, 0.7);
+    --scrollbar-track-color: transparent;
+  }
+
+  /* Custom scrollbar utility */
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color);
+  }
+
+  .scrollbar-custom::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: var(--scrollbar-track-color);
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb-color);
+    border-radius: 8px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+}
+
 /* Add container styles */
 @layer components {
   .container {

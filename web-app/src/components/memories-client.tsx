@@ -6,11 +6,11 @@ import { ChatHeader } from "@/components/chat-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  PlusIcon, 
-  BrainIcon, 
-  MoreHorizontalIcon, 
-  EditIcon, 
+import {
+  PlusIcon,
+  BrainIcon,
+  MoreHorizontalIcon,
+  EditIcon,
   TrashIcon,
   MessageSquareIcon
 } from "lucide-react";
@@ -45,24 +45,33 @@ interface MemoriesClientProps {
 }
 
 export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
-  const { 
-    memories, 
-    isLoading, 
-    isError, 
-    createMemory, 
-    updateMemory, 
-    deleteMemories 
+  const {
+    memories,
+    isLoading,
+    isError,
+    createMemory,
+    updateMemory,
+    deleteMemories
   } = useMemories(initialMemories);
-  
+
   // Dialog states
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [memoryToDelete, setMemoryToDelete] = useState<number | null>(null);
-  
+
   // Selection states
   const [selectedMemories, setSelectedMemories] = useState<number[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  // For Saving new Memory
+  const [chatId, setChatId] = useState<string>('');
+
+
+
+  const handleSetChatId = (id: string) => {
+    console.log('Selected Chat ID:', id);
+    setChatId(id);
+  };
 
   const handleCreateMemory = () => {
     setEditingMemory(null);
@@ -93,8 +102,8 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
   };
 
   const toggleSelection = (memoryId: number) => {
-    setSelectedMemories(prev => 
-      prev.includes(memoryId) 
+    setSelectedMemories(prev =>
+      prev.includes(memoryId)
         ? prev.filter(id => id !== memoryId)
         : [...prev, memoryId]
     );
@@ -148,7 +157,7 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
                 <BrainIcon className="h-5 w-5 text-muted-foreground" />
                 <h1 className="text-lg font-semibold">Memories</h1>
               </div>
-              
+
               {/* Selection indicator */}
               {isSelectionMode && selectedMemories.length > 0 && (
                 <div className="flex items-center gap-2 ml-4">
@@ -164,18 +173,18 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
                 {isSelectionMode ? (
                   <>
                     {selectedMemories.length > 0 && (
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         onClick={() => setShowDeleteConfirm(true)}
                       >
                         <TrashIcon className="w-4 h-4 mr-2" />
                         Delete
                       </Button>
                     )}
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={selectAll}
                       disabled={selectedMemories.length === memories.length}
                     >
@@ -188,18 +197,18 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
                 ) : (
                   <>
                     {memories.length > 0 && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setIsSelectionMode(true)}
                       >
                         Select
                       </Button>
                     )}
-                    {/* <Button size="sm" onClick={handleCreateMemory}>
+                    <Button size="sm" onClick={handleCreateMemory}>
                       <PlusIcon className="w-4 h-4 mr-2" />
                       New Memory
-                    </Button> */}
+                    </Button>
                   </>
                 )}
               </div>
@@ -214,7 +223,7 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {memories.map((memory) => (
-                <MemoryCard 
+                <MemoryCard
                   key={memory.id}
                   memory={memory}
                   isSelected={selectedMemories.includes(memory.id)}
@@ -239,10 +248,12 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
         onOpenChange={setIsDialogOpen}
         onSave={handleSaveMemory}
         memory={editingMemory}
-        chatId={undefined} // Will be provided when creating from chat
+        chatId={chatId} // Will be provided when creating from chat
+        setChatId={setChatId}
+        showProjectAndChatSelector={!editingMemory}
       />
 
-      <DeleteConfirmDialog 
+      <DeleteConfirmDialog
         isOpen={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
         onConfirm={handleDeleteMemory}
@@ -253,16 +264,16 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
 }
 
 // Supporting components
-function MemoryCard({ 
-  memory, 
+function MemoryCard({
+  memory,
   isSelected,
   isSelectionMode,
   onToggleSelection,
-  onEdit, 
+  onEdit,
   onDelete,
   getCategoryColor
-}: { 
-  memory: Memory; 
+}: {
+  memory: Memory;
   isSelected: boolean;
   isSelectionMode: boolean;
   onToggleSelection: () => void;
@@ -281,13 +292,13 @@ function MemoryCard({
           />
         </div>
       )}
-      
+
       <div className={`transition-all duration-200 ${isSelectionMode ? 'pl-12' : ''}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <CardTitle 
-                className="text-base font-medium line-clamp-1 cursor-pointer hover:text-primary transition-colors group-hover:text-primary mb-2" 
+              <CardTitle
+                className="text-base font-medium line-clamp-1 cursor-pointer hover:text-primary transition-colors group-hover:text-primary mb-2"
                 onClick={() => !isSelectionMode && onEdit(memory)}
               >
                 {memory.title}
@@ -300,13 +311,13 @@ function MemoryCard({
                 )}
               </div>
             </div>
-            
+
             {!isSelectionMode && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 -mr-2"
                   >
                     <MoreHorizontalIcon className="h-4 w-4" />
@@ -317,7 +328,7 @@ function MemoryCard({
                     <EditIcon className="h-4 w-4 mr-2" />
                     Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => onDelete(memory.id)}
                     className="text-destructive focus:text-destructive"
                   >
@@ -330,7 +341,7 @@ function MemoryCard({
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div 
+          <div
             className="text-sm text-muted-foreground mb-4 line-clamp-3 cursor-pointer hover:text-foreground transition-colors"
             onClick={() => !isSelectionMode && onEdit(memory)}
           >
@@ -342,7 +353,7 @@ function MemoryCard({
             </p>
             <div className="flex items-center gap-1">
               <MessageSquareIcon className="w-3 h-3" />
-              <Link 
+              <Link
                 href={`/app/chat/${memory.chat_id}`}
                 className="hover:text-foreground transition-colors"
               >
@@ -460,12 +471,12 @@ function MemoriesErrorState({ onCreateMemory }: { onCreateMemory: () => void }) 
   );
 }
 
-function DeleteConfirmDialog({ 
-  isOpen, 
-  onOpenChange, 
-  onConfirm, 
-  count 
-}: { 
+function DeleteConfirmDialog({
+  isOpen,
+  onOpenChange,
+  onConfirm,
+  count
+}: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
@@ -477,7 +488,7 @@ function DeleteConfirmDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete {count} memor{count > 1 ? 'ies' : 'y'}. 
+            This will permanently delete {count} memor{count > 1 ? 'ies' : 'y'}.
             This action cannot be undone and NEO will no longer remember this information.
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -37,6 +37,7 @@ export interface CreatePromptData {
   type: string;
   name: string;
   prompt: string;
+  primingPrompt: string;
   used?: boolean;
 }
 
@@ -50,6 +51,8 @@ export interface UpdatePromptData {
 export interface RunComparisonParams {
   promptA: string;
   promptB: string;
+  primingPromptA: string;
+  primingPromptB: string;
   modelA: string;
   modelB: string;
   temperature: number;
@@ -80,6 +83,8 @@ export interface PromptPanelProps {
   setName: (name: string) => void;
   prompt: string;
   setPrompt: (prompt: string) => void;
+  primingPrompt: string;
+  setPrimingPrompt: (primingPrompt: string) => void;
   model: string;
   setModel: (model: string) => void;
   savedPrompts: Prompt[];
@@ -89,6 +94,8 @@ export interface PromptPanelProps {
   onLoadDefault: () => void;
   onLoadUsed: () => void;
   onUsePrompt: () => Promise<void>;
+  onDeletePrompt?: (id: string) => void;
+  onEditPromptName?: (id: string, newName: string) => Promise<void>;
   promptType: string;
 }
 

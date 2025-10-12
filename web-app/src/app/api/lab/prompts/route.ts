@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       return new Response('Unauthorized', { status: 401 });
     }
 
-    const { type, name, prompt, used } = await request.json();
+    const { type, name, prompt, primingPrompt , used } = await request.json();
 
     if (!name?.trim() || !prompt?.trim()) {
       return new Response('Name and prompt are required', { status: 400 });
@@ -44,6 +44,7 @@ export async function POST(request: Request) {
       type: type || 'system',
       name: name.trim(),
       prompt: prompt.trim(),
+      primingPrompt: primingPrompt.trim(),
       used: used || false
     });
 

@@ -26,6 +26,8 @@ export async function POST(request: Request) {
     const {
       promptA,
       promptB,
+      primingPromptA,
+      primingPromptB,
       modelA,
       modelB,
       temperature,
@@ -38,14 +40,14 @@ export async function POST(request: Request) {
       generateText({
         model: getModel(modelA),
         system: promptA,
-        prompt: userPrompt,
+        prompt: `${primingPromptA}\n\n${userPrompt}`,
         temperature,
         maxTokens
       }),
       generateText({
         model: getModel(modelB),
         system: promptB,
-        prompt: userPrompt,
+        prompt: `${primingPromptB}\n\n${userPrompt}`,
         temperature,
         maxTokens
       })

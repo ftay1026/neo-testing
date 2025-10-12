@@ -4,14 +4,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useProjectFiles, CreateFileData, UpdateFileData } from '@/hooks/use-project-files'
 import { formatDistanceToNow } from 'date-fns'
-import { 
-  FileIcon, 
-  PlusIcon, 
-  MoreHorizontalIcon, 
-  EditIcon, 
+import {
+  FileIcon,
+  PlusIcon,
+  MoreHorizontalIcon,
+  EditIcon,
   TrashIcon,
   UploadIcon,
-  FolderIcon 
+  FolderIcon
 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FileDialog } from '@/components/file-dialog'
@@ -43,14 +43,14 @@ interface ProjectFilesSectionProps {
 
 export function ProjectFilesSection({ projectId, isMobile = false }: ProjectFilesSectionProps) {
   const { files, isLoading, isError, createFile, updateFile, deleteFiles } = useProjectFiles(projectId);
-  
+
   // Dialog states
   const [isFileDialogOpen, setIsFileDialogOpen] = useState(false);
   const [isGoogleDocsDialogOpen, setIsGoogleDocsDialogOpen] = useState(false);
   const [editingFile, setEditingFile] = useState<ProjectFile | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<number | null>(null);
-  
+
   // State for pre-filled content from Google Docs
   const [prefilledContent, setPrefilledContent] = useState<{
     title: string;
@@ -136,61 +136,65 @@ export function ProjectFilesSection({ projectId, isMobile = false }: ProjectFile
     }
 
     return (
-      <div className="space-y-3">
-        {files.map((file) => (
-          <div
-            key={file.id}
-            className="group border border-border/40 rounded-lg p-3 hover:shadow-sm transition-all duration-200"
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div 
-                className="flex-1 cursor-pointer"
-                onClick={() => handleEditFile(file)}
-              >
-                <h4 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
-                  {file.title || 'Untitled'}
-                </h4>
+      <div className='mb-2'>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3   gap-2 ">
+          {files.map((file) => (
+            <div
+              key={file.id}
+              className="group border border-border-300/25 bg-[#30302E] h-22 rounded-lg px-2 py-2 hover:shadow-sm transition-all duration-200 w-full flex flex-col"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div
+                  className="flex-1 cursor-pointer"
+                  onClick={() => handleEditFile(file)}
+                >
+                  <h4 className="font-medium text-xs group-hover:text-primary transition-colors"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere'
+                    }}>
+                    {file.title || 'Untitled'}
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground ">
+                    {formatDistanceToNow(new Date(file.updated_at), { addSuffix: true })}
+                  </p>
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    >
+                      <MoreHorizontalIcon className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEditFile(file)}>
+                      <EditIcon className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setFileToDelete(file.id);
+                        setShowDeleteConfirm(true);
+                      }}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <TrashIcon className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                  >
-                    <MoreHorizontalIcon className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleEditFile(file)}>
-                    <EditIcon className="h-4 w-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      setFileToDelete(file.id);
-                      setShowDeleteConfirm(true);
-                    }}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <TrashIcon className="h-4 w-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(file.updated_at), { addSuffix: true })}
-              </p>
-              <Badge variant="outline" className="text-xs">
-                MD
-              </Badge>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   };
