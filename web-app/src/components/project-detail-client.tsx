@@ -245,22 +245,28 @@ export function ProjectDetailClient({
               </div>
 
               {/* Right sidebar wrapper */}
-             { !open && <div className="w-[30%] flex-shrink-0 flex flex-col gap-4">
+              <div
+                className={`
+                        ${!open ? "flex" : "hidden"} 
+                        min-[1500px]:flex
+                        w-[30%] flex-shrink-0 flex-col gap-4
+                `}
+              >
                 {/* Project Files Wrapper */}
                 <div className="relative">
-                  {/* Project Files Section */}
-                    <div className="border border-border/40 bg-background/50 rounded-lg">
-                      <ProjectFilesSection projectId={project.id} />
-                    </div>
+                  <div className="border border-border/40 bg-background/50 rounded-lg">
+                    <ProjectFilesSection projectId={project.id} />
+                  </div>
                 </div>
+
                 {/* Interaction Logs Wrapper */}
                 <div className="relative flex-1">
-                  {/* Interaction Logs Section */}
                   <div className="border border-border/40 bg-background/50 rounded-lg">
                     <ProjectInteractionLogsSection projectId={project.id} />
                   </div>
                 </div>
-              </div>}
+              </div>
+
             </div>
 
             {/* Mobile Layout */}

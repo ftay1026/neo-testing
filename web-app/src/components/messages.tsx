@@ -85,7 +85,7 @@ function PureMessages({
       {/* Right Section (Desktop only) - Project Knowledge */}
       {!open && (
         <div
-          className={`hidden xl:flex flex-col w-[25%] flex-shrink-0 p-6 pl-3 ${
+          className={`hidden xl:flex flex-col justify-center items-center w-[25%] flex-shrink-0 p-6 pl-3 ${
             isProjectKnowledgeOpen ? "xl:visible" : "xl:invisible "
           }`}
         >

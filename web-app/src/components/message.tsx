@@ -8,6 +8,7 @@ import { Markdown } from './markdown';
 import equal from 'fast-deep-equal';
 import { cn } from '@/lib/utils';
 import { UseChatHelpers } from '@ai-sdk/react';
+import { useSidebar } from './ui/sidebar';
 
 const PurePreviewMessage = ({
   chatId,
@@ -24,11 +25,13 @@ const PurePreviewMessage = ({
   reload: UseChatHelpers['reload'];
   isReadonly: boolean;
 }) => {
+  const { open } = useSidebar();
+
   return (
     <AnimatePresence>
       <motion.div
         data-testid={`message-${message.role}`}
-        className="w-full mx-auto max-w-3xl px-4 group/message"
+        className={`px-4 w-full group/message ${open ? "max-w-3xl mx-auto": ""}`}
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         data-role={message.role}

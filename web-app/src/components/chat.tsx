@@ -369,7 +369,7 @@ export function Chat({
           </Tooltip>
         </div>
 
-        <form className="flex px-1 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl xl:max-w-[50%]">
+        <form className="flex px-1.5 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl xl:max-w-[50%]">
           {!isReadonly && (
             <ChatInput
               chatId={id}
