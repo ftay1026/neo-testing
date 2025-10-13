@@ -38,7 +38,7 @@ function PureChatHeader({
   const { width: windowWidth } = useWindowSize();
 
   // Get the display name for the project
-  const displayProjectName = projectName && isDefaultProject 
+  const displayProjectName = projectName && isDefaultProject
     ? getProjectDisplayName(projectName, isDefaultProject)
     : projectName;
 
@@ -48,23 +48,23 @@ function PureChatHeader({
 
       {/* Project name and chat title display */}
       {displayProjectName && projectId && (
-        <div className="order-3 md:order-2 me-auto items-center gap-2 flex whitespace-nowrap">
-          <Link href={`/app/project/${projectId}`}>
-            <div className="flex items-center gap-2 px-2 py-1 bg-muted/50 rounded-md">
+        <div className="order-3 md:order-2 me-auto items-center gap-2 flex min-w-0 flex-1 md:flex-initial">
+          <Link href={`/app/project/${projectId}`} className="flex-shrink-0">
+            <div className="flex items-center gap-2 px-2 py-1 bg-muted/50 max-[400px]:hidden rounded-md">
               <Icons.FolderIcon size={14} className="text-muted-foreground" />
               <span className="text-sm font-medium text-muted-foreground">
                 {displayProjectName}
               </span>
             </div>
           </Link>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground min-w-0 line-clamp-2 break-words">
             {/* Show chat title if available, otherwise fall back to 'Untitled Chat' only if chat ID is available */}
             {` / ${chatTitle || (chatId ? 'Untitled Chat' : '')}`}
           </div>
         </div>
       )}
 
-      <div className="md:flex py-1.5 px-2 h-fit md:h-[34px] order-4 md:ml-auto gap-2 items-center">
+      <div className="md:flex py-1.5 px-2 h-fit md:h-[34px] order-4 md:ml-auto gap-2 items-center flex-shrink-0">
         <div className="hidden md:block"><CreditsNavItem /></div>
         <HeaderAuthClient />
       </div>

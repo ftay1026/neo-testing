@@ -261,7 +261,7 @@ export function ProjectDetailClient({
 
                 {/* Interaction Logs Wrapper */}
                 <div className="relative flex-1">
-                  <div className="border border-border/40 bg-background/50 rounded-lg">
+                  <div className="border border-border/40 p-4 bg-background/50 rounded-lg">
                     <ProjectInteractionLogsSection projectId={project.id} />
                   </div>
                 </div>

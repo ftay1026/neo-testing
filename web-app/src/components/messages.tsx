@@ -42,27 +42,30 @@ function PureMessages({
   }
 
   return (
-    <div className="flex w-full h-full overflow-hidden">
+    <div className="flex w-full h-full px-2    flex-row justify-center items-center ">
       {/* Left Section (Desktop only) - Interaction Logs */}
-      {!open && (
-        <div
-          className={`hidden xl:flex flex-col w-[25%] flex-shrink-0 p-6 pr-3  ${
-            isLogOpen ? "xl:visible" : "xl:invisible "
+      <div
+        className={`flex-row justify-end h-full items-start w-[25%] max-w-96  flex-shrink-0 pt-14 p-6 pr-0 ${open
+            ? "hidden min-[1280px]:hidden min-[1500px]:flex"
+            : "hidden min-[1280px]:flex"
           }`}
+      >
+        <div
+          className={`bg-background/50 rounded-lg h-full overflow-y-auto max-w-80 pr-4 flex flex-col justify-start items-baseline scrollbar-custom ${isLogOpen ? "visible" : "invisible"
+            }`}
         >
-          <div className="bg-background/50 rounded-lg h-full overflow-y-auto flex flex-col scrollbar-custom" >
-            <ProjectInteractionLogsSection projectId={projectId!} />
-          </div>
+          <ProjectInteractionLogsSection projectId={projectId!} />
         </div>
-      )}
+      </div>
+
 
       {/* Middle Section - Messages */}
-      <div className="flex flex-col flex-1 w-[55%] overflow-hidden">
+      <div className="flex  flex-1 flex-col h-full px-4 p-3 min-w-0   max-w-3xl  overflow-hidden">
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto w-full scrollbar-custom    py-4"
+          className="flex-1 overflow-y-auto w-full max-w-3xl  min-w-0 scrollbar-custom py-4"
         >
-          <div className={`flex flex-col gap-6 xl:max-w-full max-w-3xl  mx-auto ${open ? "max-w-3xl": ""}`}>
+          <div className={`flex flex-col gap-6 xl:max-w-full  max-w-3xl min-w-0 mx-auto `}>
             {messages.map((message, index) => (
               <PreviewMessage
                 key={message.id}
@@ -83,17 +86,19 @@ function PureMessages({
       </div>
 
       {/* Right Section (Desktop only) - Project Knowledge */}
-      {!open && (
-        <div
-          className={`hidden xl:flex flex-col w-[25%] flex-shrink-0 p-6 pl-3 ${
-            isProjectKnowledgeOpen ? "xl:visible" : "xl:invisible "
+
+      <div
+         className={`flex-row justify-start h-full items-start w-[25%] max-w-96  flex-shrink-0 pt-10 p-6 pl-1 ${open
+            ? "hidden min-[1280px]:hidden min-[1500px]:flex"
+            : "hidden min-[1280px]:flex"
           }`}
-        >
-          <div className="rounded-lg h-full overflow-y-auto scrollbar-custom flex flex-col">
-            <ProjectFilesSection projectId={projectId!} />
-          </div>
+      >
+        <div className={`rounded-lg h-full overflow-y-auto scrollbar-custom flex flex-col ${isProjectKnowledgeOpen ? "visible" : "invisible"
+            }`}>
+          <ProjectFilesSection projectId={projectId!} />
         </div>
-      )}
+      </div>
+
 
       {/* Mobile Slider (only visible <1200px) */}
       <div className="xl:hidden">

@@ -165,7 +165,7 @@ export function ProjectInteractionLogsSection({ projectId, isMobile = false }: P
 
   return (
     <>
-      <div className={`flex flex-col p-4`}>
+      <div className={`flex flex-col `}>
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
