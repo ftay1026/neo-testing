@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Link from 'next/link';
+import { useSidebar } from './ui/sidebar';
 
 interface ChatProps {
   id: string;
@@ -57,6 +58,7 @@ export function Chat({
 }: ChatProps) {
   const { mutate } = useSWRConfig();
   const { mutate: mutateCredits } = useCredits();
+  const { open } = useSidebar();
 
 
   const [mode, setMode] = useState<ModeType>(initialMode);
@@ -104,7 +106,7 @@ export function Chat({
       }
     }
   }, [id, isNewChat]);
-  
+
   const closeSideBarHandler = () => {
     logOpen && setLogOpen(!logOpen);
     projectKnowledgeOpen && setProjectKnowledgeOpen(!projectKnowledgeOpen);
@@ -320,19 +322,20 @@ export function Chat({
           </div>
         </div>
       )}
-
-      <Messages
-        chatId={id}
-        status={status}
-        messages={messages}
-        setMessages={setMessages}
-        reload={reload}
-        isReadonly={false}
-        isLogOpen={logOpen}
-        isProjectKnowledgeOpen={projectKnowledgeOpen}
-        projectId={projectId}
-        closeSideBar={closeSideBarHandler}
-      />
+      <div className=" flex-row justify-start items-start   flex flex-1 h-full overflow-hidden">
+        <Messages
+          chatId={id}
+          status={status}
+          messages={messages}
+          setMessages={setMessages}
+          reload={reload}
+          isReadonly={false}
+          isLogOpen={logOpen}
+          isProjectKnowledgeOpen={projectKnowledgeOpen}
+          projectId={projectId}
+          closeSideBar={closeSideBarHandler}
+        />
+      </div>
 
       {
         error && (
@@ -348,10 +351,9 @@ export function Chat({
           </div>
         )
       }
-
-      <div className='flex justify-center '>
+      <div className='flex justify-center min-w-0 '>
         {/* Log Toggle Button*/}
-        <div className="mb-8 mt-1  flex self-baseline-last">
+        <div className="mb-8 mt-1 flex self-baseline-last">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -369,7 +371,8 @@ export function Chat({
           </Tooltip>
         </div>
 
-        <form className="flex px-1.5 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl xl:max-w-[50%]">
+        <form className={`flex px-1.5 bg-background pb-4 md:pb-6 gap-2 min-w-0 flex-1 max-w-3xl ${!open ? "min-[1500px]:max-w-3xl min-[1280px]:max-w-[50%]" : "max-w-3xl min-[1500px]:max-w-[50%] min-[1800px]:max-w-3xl"
+          }`}>
           {!isReadonly && (
             <ChatInput
               chatId={id}
@@ -386,6 +389,7 @@ export function Chat({
             />
           )}
         </form>
+
         {/*Knowledge Toggle Button */}
         <div className="flex items-baseline-last mt-1 mb-8">
           <Tooltip>
@@ -396,7 +400,7 @@ export function Chat({
                 className="h-8 w-8 bg-[#18181b] rounded-full flex flex-col items-center justify-center"
                 onClick={() => setProjectKnowledgeOpen(!projectKnowledgeOpen)}
               >
-                <School className=' size-6' />
+                <School className='size-6' />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left">
@@ -405,6 +409,10 @@ export function Chat({
           </Tooltip>
         </div>
       </div>
+
+
     </div>
   );
 }
+
+
