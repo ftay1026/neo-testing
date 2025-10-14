@@ -39,17 +39,13 @@ export interface Memory {
   category?: string;
   created_at: string;
   updated_at: string;
-  chat_id: string | null;
-  chats: {
-    title: string;
-  } | null;
 }
 
 export interface CreateMemoryData {
   title: string;
   content: string;
   category?: string;
-  chat_id: string | null;
+  chat_id?: string;
 }
 
 export interface UpdateMemoryData {

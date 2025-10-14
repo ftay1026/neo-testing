@@ -15,7 +15,9 @@ export function useMemories(initialData?: Memory[]) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
     }
+   
   );
+ 
 
   const createMemory = async (memoryData: CreateMemoryData) => {
     try {

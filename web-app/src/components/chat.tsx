@@ -359,7 +359,7 @@ export function Chat({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 bg-[#18181b] pt-0.5 rounded-full flex flex-col items-center justify-center"
+                className={`h-8 w-8 bg-[#18181b] pt-0.5 rounded-full flex flex-col items-center justify-center ${logOpen ? 'bg-accent': ''}`}
                 onClick={() => setLogOpen(!logOpen)}
               >
                 <BookOpenText className='size-6' />
@@ -397,7 +397,7 @@ export function Chat({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 bg-[#18181b] rounded-full flex flex-col items-center justify-center"
+                className={`h-8 w-8 bg-[#18181b] rounded-full flex flex-col items-center justify-center ${projectKnowledgeOpen ? 'bg-accent' :''}`}
                 onClick={() => setProjectKnowledgeOpen(!projectKnowledgeOpen)}
               >
                 <School className='size-6' />

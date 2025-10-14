@@ -21,10 +21,9 @@ export async function GET() {
         title,
         content,
         category,
-        created_at,
-        updated_at,
         chat_id,
-        chats!inner(title)
+        created_at,
+        updated_at
       `)
       .order('created_at', { ascending: false });
 
@@ -32,6 +31,7 @@ export async function GET() {
       console.error('Error fetching memories:', error);
       return new Response('Error fetching memories', { status: 500 });
     }
+    console.log('API memories:', memories);
 
     return Response.json(memories || []);
   } catch (error) {
@@ -50,14 +50,14 @@ export async function POST(request: Request) {
     }
 
     const { title, content, category, chat_id } = await request.json();
-
-    if (!title?.trim() || !content?.trim() || !chat_id) {
+    console.log("the chat id is ", chat_id)
+    if (!title?.trim() || !content?.trim()) {
       return new Response('Title, content, and chat_id are required', { status: 400 });
     }
 
     // Use centralized content processing service to chunk the content and generate embeddings
     const processed = await processMemory(content.trim());
-    
+
     console.log(`📦 Processed into ${processed.chunks.length} searchable chunks`);
 
     // Prepare chunks for database
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       'create_memory_and_chunks',
       {
         p_user_id: user.id,
-        p_chat_id: chat_id,
+        p_chat_id: chat_id || null,
         p_title: title.trim(),
         p_content: processed.originalContent,
         p_category: category?.trim() || null,
@@ -76,27 +76,46 @@ export async function POST(request: Request) {
       }
     );
 
+    console.log("the memory id is ", memoryId)
+    console.log("memoryId type:", typeof memoryId, "value:", memoryId);
+
+
     if (error) {
       console.error('Error creating memory:', error);
       return new Response('Error creating memory', { status: 500 });
     }
 
-    // Return the created memory
-    const { data: newMemory } = await supabase
-      .from('memories')
-      .select(`
-        id,
-        title,
-        content,
-        category,
-        created_at,
-        updated_at,
-        chat_id,
-        chats!inner(title)
-      `)
-      .eq('id', memoryId)
-      .single();
+    // Try to get the created memory back from the RPC if it returns the row (see schema change).
+    // If the RPC still only returns the id, fall back to a direct select by id.
+    let newMemory: any = null;
 
+    // If the RPC returned a record (object with an id), memoryId may be that row already
+    if (memoryId && typeof memoryId === 'object' && 'id' in (memoryId as any)) {
+      newMemory = memoryId;
+    }
+
+    if (!newMemory) {
+      const { data: fetched, error: fetchError } = await supabase
+        .from('memories')
+        .select(`
+          id,
+          title,
+          content,
+          category,
+          chat_id,
+          created_at,
+          updated_at
+        `)
+        .eq('id', memoryId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching newly created memory:', fetchError);
+      }
+      newMemory = fetched;
+    }
+
+    console.log('the new memory is ', newMemory);
     return Response.json(newMemory);
   } catch (error) {
     console.error('Unexpected error:', error);
