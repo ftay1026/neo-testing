@@ -37,8 +37,8 @@ export async function PUT(
     // Prepare chunks for database
     const dbChunks = prepareChunksForDatabase(processed.chunks);
 
-    // Update memory
-    const { error: updateError } = await supabase
+    // Update memory and get the updated data in the same operation using .select()
+    const { data: updatedMemory, error: updateError } = await supabase
       .from('memories')
       .update({
         title: title.trim(),
@@ -47,51 +47,52 @@ export async function PUT(
         updated_at: new Date().toISOString(),
       })
       .eq('id', memoryIdNumber)
-      .eq('user_id', user.id);
-
-    if (updateError) {
-      console.error('Error updating memory:', updateError);
-      return new Response('Error updating memory', { status: 500 });
-    }
-
-    // Delete old chunks and insert new ones
-    await supabase
-      .from('memory_sections')
-      .delete()
-      .eq('memory_id', memoryIdNumber);
-
-    // Insert new chunks
-    for (const chunk of dbChunks) {
-      await supabase
-        .from('memory_sections')
-        .insert({
-          memory_id: memoryIdNumber,
-          chunk_index: chunk.chunk_index,
-          content: chunk.content,
-          embedding: JSON.stringify(chunk.embedding)
-        });
-    }
-
-    // Return updated memory
-    const { data: updatedMemory } = await supabase
-      .from('memories')
+      .eq('user_id', user.id)
       .select(`
         id,
         title,
         content,
         category,
         created_at,
-        updated_at,
-        chat_id,
-        chats!inner(title)
+        updated_at
       `)
-      .eq('id', memoryIdNumber)
-      .eq('user_id', user.id)
       .single();
+
+    if (updateError) {
+      console.error('Error updating memory:', updateError);
+      return new Response('Error updating memory', { status: 500 });
+    }
 
     if (!updatedMemory) {
       return new Response('Memory not found', { status: 404 });
     }
+
+    // Delete old chunks
+    await supabase
+      .from('memory_sections')
+      .delete()
+      .eq('memory_id', memoryIdNumber);
+
+    // Batch insert all chunks at once instead of one by one
+    if (dbChunks.length > 0) {
+      const chunksToInsert = dbChunks.map(chunk => ({
+        memory_id: memoryIdNumber,
+        chunk_index: chunk.chunk_index,
+        content: chunk.content,
+        embedding: JSON.stringify(chunk.embedding)
+      }));
+
+      const { error: insertError } = await supabase
+        .from('memory_sections')
+        .insert(chunksToInsert);
+
+      if (insertError) {
+        console.error('Error inserting chunks:', insertError);
+        // Memory is updated but chunks failed - you may want to handle this
+      }
+    }
+      
+    console.log("the updated memory is ", updatedMemory);
 
     return Response.json(updatedMemory);
   } catch (error) {

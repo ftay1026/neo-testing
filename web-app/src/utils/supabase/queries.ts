@@ -338,12 +338,11 @@ export async function getUserMemories(supabase: SupabaseClient<Database>) {
       content,
       category,
       created_at,
-      updated_at,
-      chat_id,
-      chats!inner(title)
+      updated_at
     `)
     .order('created_at', { ascending: false });
-
+    console.log('SSR memories:', memories);
+    
   if (error) throw error;
   return memories || [];
 }

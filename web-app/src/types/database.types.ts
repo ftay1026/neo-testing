@@ -347,7 +347,7 @@ export type Database = {
       memories: {
         Row: {
           category: string | null
-          chat_id: string
+          chat_id: string | null
           content: string
           created_at: string
           id: number
@@ -357,7 +357,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
-          chat_id: string
+          chat_id?: string | null
           content: string
           created_at?: string
           id?: number
@@ -367,7 +367,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
-          chat_id?: string
+          chat_id?: string | null
           content?: string
           created_at?: string
           id?: number

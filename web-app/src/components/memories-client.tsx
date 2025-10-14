@@ -66,13 +66,6 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
   // For Saving new Memory
   const [chatId, setChatId] = useState<string>('');
 
-
-
-  const handleSetChatId = (id: string) => {
-    console.log('Selected Chat ID:', id);
-    setChatId(id);
-  };
-
   const handleCreateMemory = () => {
     setEditingMemory(null);
     setIsDialogOpen(true);
@@ -248,9 +241,7 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
         onOpenChange={setIsDialogOpen}
         onSave={handleSaveMemory}
         memory={editingMemory}
-        chatId={chatId} // Will be provided when creating from chat
-        setChatId={setChatId}
-        showProjectAndChatSelector={!editingMemory}
+        chatId={undefined} // Will be provided when creating from chat
       />
 
       <DeleteConfirmDialog
@@ -347,20 +338,25 @@ function MemoryCard({
           >
             {memory.content}
           </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <p>
+          {/* Removed the time of last update and project and chat name */}
+          {/* <div className="flex items-center justify-between text-xs text-muted-foreground">
+           <p>
               {formatDistanceToNow(new Date(memory.updated_at), { addSuffix: true })}
             </p>
-            <div className="flex items-center gap-1">
+             <div className="flex items-center gap-1">
               <MessageSquareIcon className="w-3 h-3" />
+              {memory.chat_id ? (
               <Link
                 href={`/app/chat/${memory.chat_id}`}
                 className="hover:text-foreground transition-colors"
               >
                 {memory.chats?.title || 'View chat'}
               </Link>
-            </div>
-          </div>
+              ) : (
+                <span className="italic text-xs text-muted-foreground">{memory.chats?.title || 'No associated chat'}</span>
+              )}
+            </div> 
+          </div> */}
         </CardContent>
       </div>
     </Card>
