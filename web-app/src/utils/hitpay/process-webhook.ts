@@ -19,45 +19,75 @@ export class ProcessHitPayWebhook {
 
       // Only process succeeded payments
       if (eventData.status !== 'succeeded') {
-        console.log(`Payment ${eventData.payment_id} status: ${eventData.status}`);
+        console.log(`Payment ${eventData.payment_id} status: ${eventData.status} - skipping`);
         return;
       }
 
-      // Use reference_number as customer identifier (should be user email)
-      const customerEmail = eventData.reference_number;
+      // Use reference_number as customer identifier (should be user email in hitpay)
+      const customerEmail = eventData.reference_number?.trim();
 
-      if (!customerEmail) {
-        console.error('Customer email not found in webhook reference_number');
-        return;
+      if (!customerEmail || !customerEmail.includes('@')) {
+        console.error('Invalid or missing customer email in webhook reference_number:', eventData.reference_number);
+        throw new Error('Customer email not found in webhook data');
       }
 
-      // Check if customer exists, create if needed
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .select('customer_id, email')
+      console.log(`Processing payment for email: ${customerEmail}`);
+
+      // Get the user_id from auth.users table using email
+      const { data: authUser, error: authError } = await supabase
+        .from('auth.users')
+        .select('id, email')
         .eq('email', customerEmail)
         .single();
 
-      let customerId = customerEmail; // Default to email as customer ID
+      if (authError) {
+        console.error(`Error querying auth.users for email ${customerEmail}:`, authError);
+        throw new Error(`Failed to query user account: ${authError.message}`);
+      }
 
-      if (!customer) {
+      if (!authUser) {
+        console.error(`User not found for email: ${customerEmail}`);
+        throw new Error(`User account not found for email: ${customerEmail}`);
+      }
+
+      const userId = authUser.id;
+      console.log(`Found user_id: ${userId} for email: ${customerEmail}`);
+
+      // Check if customer exists, create/update if needed
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('customer_id, email, user_id')
+        .eq('customer_id', customerEmail) // HitPay uses email as customer_id
+        .maybeSingle();
+
+      if (!existingCustomer) {
         console.log('Customer not found, creating new entry...');
-        const { data: newCustomer, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from('customers')
           .insert({
-            customer_id: customerEmail,
-            email: customerEmail
-          })
-          .select()
-          .single();
+            customer_id: customerEmail, // HitPay customer_id (email)
+            email: customerEmail,
+            user_id: userId, // Link to auth user
+          });
 
         if (insertError) {
-          console.error('Failed to create new customer:', insertError);
-          return;
+          console.error('Failed to create new customer record:', insertError);
+          throw new Error('Failed to create new customer record');
         }
-        customerId = newCustomer.customer_id;
-      } else {
-        customerId = customer.customer_id;
+      } else if (!existingCustomer.user_id) {
+        // Backfill user_id if it's missing
+        console.log('Updating customer record with user_id...');
+        const { error: updateError } = await supabase
+          .from('customers')
+          .update({ 
+            user_id: userId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('customer_id', customerEmail);
+
+        if (updateError) {
+          console.error('Failed to update customer with user_id:', updateError);
+        }
       }
 
       // Calculate credits based on amount
@@ -72,28 +102,35 @@ export class ProcessHitPayWebhook {
       if (matchingTier) {
         creditsPurchased = matchingTier.credits;
         description = `HitPay purchase: ${matchingTier.name} (${creditsPurchased} credits) - Payment ID: ${eventData.payment_id}`;
-        console.log(`Processing HitPay payment webhook for customer ${customerId}`);
-        console.log(`Matched tier: ${matchingTier.name} for amount ${amountInCents} cents`);
+        console.log(`Matched tier: ${matchingTier.name} for ${amountInCents} cents`);
       } else {
         // Fallback: 10 credits per dollar
         creditsPurchased = Math.floor(parseFloat(eventData.amount) * 10);
         description = `HitPay purchase: Custom amount (${creditsPurchased} credits) - Payment ID: ${eventData.payment_id}`;
-        console.log(`Processing HitPay payment webhook for customer ${customerId}`);
-        console.log(`No matching tier found for amount ${amountInCents} cents, using fallback credits: ${creditsPurchased}`);
+        console.log(`No matching tier for ${amountInCents} cents, using fallback: ${creditsPurchased} credits`);
       }
 
-      // Add credits using the existing function
-      await supabase.rpc('add_credits', {
-        p_customer_id: customerId,
+      // Add credits using email as customer_id (HitPay pattern)
+      const { error: creditsError } = await supabase.rpc('add_credits', {
+        p_customer_id: customerEmail, // Use email as customer_id
         p_amount: creditsPurchased,
         p_description: description
       });
 
-      console.log(`Successfully processed HitPay payment ${eventData.payment_id}: ${creditsPurchased} credits added to ${customerId}`);
+      if (creditsError) {
+        console.error('Failed to add credits:', creditsError);
+        throw new Error('Failed to add credits to customer account');
+      }
+
+      console.log(`✅ Successfully processed payment ${eventData.payment_id}:`);
+      console.log(`   - Email: ${customerEmail}`);
+      console.log(`   - User ID: ${userId}`);
+      console.log(`   - Credits added: ${creditsPurchased}`);
+      console.log(`   - Amount: ${eventData.currency} ${eventData.amount}`);
 
     } catch (error) {
       console.error('Error processing HitPay webhook:', error);
-      throw error;
+      throw error; // Re-throw so webhook returns 500 and HitPay retries
     }
   }
 }

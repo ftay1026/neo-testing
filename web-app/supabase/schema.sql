@@ -300,27 +300,26 @@ DECLARE
     signup_description TEXT := 'Welcome bonus - 100 free credits to get started';
     user_email TEXT;
 BEGIN
-    -- Get user email with better fallback handling
-    user_email := COALESCE(NEW.email, NEW.raw_user_meta_data->>'email');
-    
-    -- If still no email, create a synthetic one
-    IF user_email IS NULL THEN
-        user_email := NEW.id::text || '@neo.local';
-    END IF;
+    -- Get user email
+    user_email := COALESCE(NEW.email, NEW.raw_user_meta_data->>'email', NEW.id::text || '@neo.local');
 
-    -- Create customer record using email as customer_id (HitPay pattern)
-    INSERT INTO public.customers (customer_id, email, created_at, updated_at)
+    -- Create customer record with BOTH email and user_id
+    INSERT INTO public.customers (customer_id, email, user_id, created_at, updated_at)
     VALUES (
-        user_email,  -- email as customer_id for HitPay compatibility
+        user_email,  -- HitPay customer_id (email)
         user_email,  -- email field
+        NEW.id,      -- NEW: Direct link to user
         NOW(),
         NOW()
     )
-    ON CONFLICT (customer_id) DO NOTHING;
+    ON CONFLICT (customer_id) 
+    DO UPDATE SET 
+        user_id = NEW.id,  -- Update user_id if customer already exists
+        updated_at = NOW();
 
-    -- Grant signup credits using existing add_credits function
+    -- Grant signup credits
     PERFORM add_credits(
-        user_email,  -- customer_id (email)
+        user_email,
         signup_credits_amount,
         signup_description
     );
@@ -328,7 +327,6 @@ BEGIN
     RETURN NEW;
 EXCEPTION
     WHEN OTHERS THEN
-        -- Log the error but don't fail the user creation
         RAISE WARNING 'Failed to grant signup credits to user %: %', NEW.id, SQLERRM;
         RETURN NEW;
 END;
@@ -547,10 +545,6 @@ CREATE TABLE IF NOT EXISTS "public"."chats" (
 ALTER TABLE "public"."chats" OWNER TO "postgres";
 
 
-COMMENT ON COLUMN "public"."chats"."inheritance_summary" IS 'Snapshot summary of parent chat content at the time this chat was inherited';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."credit_transactions" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "customer_id" "text" NOT NULL,
@@ -579,7 +573,8 @@ CREATE TABLE IF NOT EXISTS "public"."customers" (
     "customer_id" "text" NOT NULL,
     "email" "text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "user_id" "uuid"
 );
 
 
@@ -620,9 +615,9 @@ CREATE TABLE IF NOT EXISTS "public"."documents" (
     "last_modified" timestamp with time zone,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "title" "text",
     "content" "text",
     "is_direct_file" boolean DEFAULT false,
+    "title" "text",
     "project_id" "uuid" NOT NULL,
     CONSTRAINT "documents_file_type_check" CHECK (("file_type" = ANY (ARRAY['text/plain'::"text", 'text/markdown'::"text", 'application/pdf'::"text", 'direct/text'::"text"])))
 );
@@ -806,7 +801,8 @@ CREATE TABLE IF NOT EXISTS "public"."prompts" (
     "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
     "used" boolean DEFAULT false NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "primingPrompt" "text" NOT NULL
 );
 
 
@@ -934,6 +930,10 @@ CREATE INDEX "customers_email_idx" ON "public"."customers" USING "btree" ("email
 
 
 
+CREATE UNIQUE INDEX "customers_user_id_unique" ON "public"."customers" USING "btree" ("user_id") WHERE ("user_id" IS NOT NULL);
+
+
+
 CREATE INDEX "document_sections_embedding_idx" ON "public"."document_sections" USING "hnsw" ("embedding" "extensions"."vector_ip_ops") WITH ("m"='16', "ef_construction"='64');
 
 
@@ -951,6 +951,10 @@ CREATE UNIQUE INDEX "documents_project_title_key" ON "public"."documents" USING 
 
 
 CREATE INDEX "idx_chats_inheritance_summary" ON "public"."chats" USING "btree" ("parent_chat_id") WHERE ("inheritance_summary" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_customers_user_id" ON "public"."customers" USING "btree" ("user_id");
 
 
 
@@ -1032,6 +1036,11 @@ ALTER TABLE ONLY "public"."credit_transactions"
 
 ALTER TABLE ONLY "public"."credits"
     ADD CONSTRAINT "credits_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("customer_id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."customers"
+    ADD CONSTRAINT "customers_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -1406,10 +1415,14 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."add_credits"("p_customer_id" "text", "p_amount" integer, "p_description" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."add_credits"("p_customer_id" "text", "p_amount" integer, "p_description" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."add_credits"("p_customer_id" "text", "p_amount" integer, "p_description" "text") TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."check_and_deduct_credits"("p_customer_id" "text", "p_required_credits" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."check_and_deduct_credits"("p_customer_id" "text", "p_required_credits" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."check_and_deduct_credits"("p_customer_id" "text", "p_required_credits" integer) TO "service_role";
 
 
@@ -1612,30 +1625,30 @@ GRANT ALL ON TABLE "public"."prompts" TO "service_role";
 
 
 
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
 
 
 
 
 
 
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
 
 
 
 
 
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
 
 
