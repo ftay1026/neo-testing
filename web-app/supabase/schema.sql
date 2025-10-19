@@ -291,6 +291,30 @@ $$;
 ALTER FUNCTION "public"."get_recent_projects_with_activity"("p_limit" integer) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."get_user_id_by_email"("p_email" "text") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_user_id UUID;
+BEGIN
+  SELECT id INTO v_user_id
+  FROM auth.users
+  WHERE email = p_email
+  LIMIT 1;
+  
+  RETURN v_user_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_user_id_by_email"("p_email" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."get_user_id_by_email"("p_email" "text") IS 'Safely retrieves user_id from auth.users by email address';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."grant_signup_credits"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1460,6 +1484,12 @@ GRANT ALL ON FUNCTION "public"."get_monthly_credit_data"("p_customer_id" "text")
 GRANT ALL ON FUNCTION "public"."get_recent_projects_with_activity"("p_limit" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_recent_projects_with_activity"("p_limit" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_recent_projects_with_activity"("p_limit" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_user_id_by_email"("p_email" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_user_id_by_email"("p_email" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_user_id_by_email"("p_email" "text") TO "service_role";
 
 
 

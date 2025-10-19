@@ -693,6 +693,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_user_id_by_email: {
+        Args: { p_email: string }
+        Returns: string
+      }
       match_document_sections_by_project: {
         Args: {
           match_count?: number

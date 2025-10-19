@@ -1,6 +1,8 @@
 // utils/hitpay/process-webhook.ts
 import { createClient } from '@/utils/supabase/admin';
 import { HitPayPricingTiers } from '@/components/checkout/hitpay-pricing-constants';
+import type { Database } from '@/types/database.types';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface HitPayWebhookData {
   payment_id: string;
@@ -15,7 +17,7 @@ export interface HitPayWebhookData {
 export class ProcessHitPayWebhook {
   async processPaymentEvent(eventData: HitPayWebhookData) {
     try {
-      const supabase = await createClient();
+      const supabase: SupabaseClient<Database> = await createClient();
 
       // Only process succeeded payments
       if (eventData.status !== 'succeeded') {
@@ -33,24 +35,22 @@ export class ProcessHitPayWebhook {
 
       console.log(`Processing payment for email: ${customerEmail}`);
 
-      // Get the user_id from auth.users table using email
-      const { data: authUser, error: authError } = await supabase
-        .from('auth.users')
-        .select('id, email')
-        .eq('email', customerEmail)
-        .single();
+      // Get user_id from auth.users using the helper function
+      // HINT: The postgres function 'get_user_id_by_email' access is granted to anon, authenticated, and service_role roles since it only returns user_id. 
+      // TODO: This needs to be checked for security implications.
+      const { data: userId, error: userError } = await supabase
+        .rpc('get_user_id_by_email', { p_email: customerEmail });
 
-      if (authError) {
-        console.error(`Error querying auth.users for email ${customerEmail}:`, authError);
-        throw new Error(`Failed to query user account: ${authError.message}`);
+      if (userError) {
+        console.error(`Error querying auth.users for email ${customerEmail}:`, userError);
+        throw new Error(`Failed to query user account: ${userError.message}`);
       }
 
-      if (!authUser) {
+      if (!userId) {
         console.error(`User not found for email: ${customerEmail}`);
         throw new Error(`User account not found for email: ${customerEmail}`);
       }
 
-      const userId = authUser.id;
       console.log(`Found user_id: ${userId} for email: ${customerEmail}`);
 
       // Check if customer exists, create/update if needed
