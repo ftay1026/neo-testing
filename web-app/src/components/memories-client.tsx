@@ -12,10 +12,9 @@ import {
   MoreHorizontalIcon,
   EditIcon,
   TrashIcon,
-  MessageSquareIcon
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import Link from "next/link";
 import { useMemories } from '@/hooks/use-memories';
 import { MemoryDialog } from '@/components/memory-dialog';
 import {
@@ -38,13 +37,39 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { User } from '@supabase/supabase-js';
 import type { Memory, CreateMemoryData, UpdateMemoryData } from '@/types/app.types';
+import { UIMessage } from 'ai';
+import { MemoryChat } from './memory-chat';
 
 interface MemoriesClientProps {
   initialMemories: Memory[];
   user: User;
+  MemoryChatId: string;
+  projectId: string;
+  projectName: string;
+  chatTitle: string;
+  initialMessages: UIMessage[];
 }
 
-export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
+// Category order and display names
+const CATEGORY_ORDER = [
+  { key: 'personal_info', label: 'Personal Info' },
+  { key: 'goals', label: 'Goals' },
+  { key: 'professional', label: 'Professional' },
+  { key: 'relationships', label: 'Relationships' },
+  { key: 'philosophy', label: 'Philosophy' },
+  { key: 'writing_style', label: 'Writing Style' },
+  { key: 'preferences', label: 'Preferences' },
+] as const;
+
+export function MemoriesClient({ 
+  initialMemories, 
+  user, 
+  MemoryChatId, 
+  projectId, 
+  projectName, 
+  chatTitle, 
+  initialMessages 
+}: MemoriesClientProps) {
   const {
     memories,
     isLoading,
@@ -63,9 +88,18 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
   // Selection states
   const [selectedMemories, setSelectedMemories] = useState<number[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  // For Saving new Memory
-  const [chatId, setChatId] = useState<string>('');
 
+  // Category collapse states - all open by default
+const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
+  new Set([
+    "writing_style",
+    "goals",
+    "professional",
+    "relationships",
+    "philosophy",
+    "preferences",
+  ])
+);
   const handleCreateMemory = () => {
     setEditingMemory(null);
     setIsDialogOpen(true);
@@ -102,6 +136,18 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
     );
   };
 
+  const toggleCategory = (categoryKey: string) => {
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryKey)) {
+        newSet.delete(categoryKey);
+      } else {
+        newSet.add(categoryKey);
+      }
+      return newSet;
+    });
+  };
+
   const selectAll = () => {
     setSelectedMemories(memories.map(m => m.id));
   };
@@ -113,16 +159,27 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
 
   const getCategoryColor = (category?: string) => {
     const colors = {
-      preferences: 'bg-blue-100 text-blue-800',
-      philosophy: 'bg-purple-100 text-purple-800',
-      personal_info: 'bg-green-100 text-green-800',
-      writing_style: 'bg-orange-100 text-orange-800',
-      goals: 'bg-yellow-100 text-yellow-800',
-      relationships: 'bg-pink-100 text-pink-800',
-      professional: 'bg-indigo-100 text-indigo-800',
+      preferences: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      philosophy: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+      personal_info: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      writing_style: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+      goals: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      relationships: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+      professional: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
   };
+
+  // Group memories by category
+  const memoriesByCategory = CATEGORY_ORDER.reduce((acc, { key }) => {
+    acc[key] = memories.filter(m => m.category === key);
+    return acc;
+  }, {} as Record<string, Memory[]>);
+
+  // Uncategorized memories
+  const uncategorizedMemories = memories.filter(
+    m => !CATEGORY_ORDER.some(cat => cat.key === m.category)
+  );
 
   // Only show loading if we're refetching and have no data
   if (isLoading && memories.length === 0) {
@@ -135,13 +192,13 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
 
   return (
     <>
-      <div className="flex flex-col min-w-0 h-dvh bg-background">
+      <div className="flex flex-col min-w-0 bg-background h-screen">
         <ChatHeader
           chatId="memories"
           selectedVisibilityType="private"
           isReadonly={true}
         />
-
+        
         {/* Header section */}
         <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mx-auto max-w-7xl py-6 px-6">
           <div className="flex h-12 items-center justify-between">
@@ -209,29 +266,119 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
           </div>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 p-6 mx-auto max-w-7xl">
-          {memories.length === 0 ? (
-            <MemoriesEmptyState onCreateFirst={handleCreateMemory} />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {memories.map((memory) => (
-                <MemoryCard
-                  key={memory.id}
-                  memory={memory}
-                  isSelected={selectedMemories.includes(memory.id)}
-                  isSelectionMode={isSelectionMode}
-                  onToggleSelection={() => toggleSelection(memory.id)}
-                  onEdit={handleEditMemory}
-                  onDelete={(id) => {
-                    setMemoryToDelete(id);
-                    setShowDeleteConfirm(true);
-                  }}
-                  getCategoryColor={getCategoryColor}
-                />
-              ))}
-            </div>
-          )}
+        <div className='flex flex-1 flex-row justify-center xl:overflow-y-hidden'>
+          {/* Memory Chat */}
+          <div className='hidden xl:block w-full min-w-0 max-w-3xl flex-1 overflow-hidden'>
+            <MemoryChat
+              chatId={MemoryChatId}
+              projectId={projectId}
+              projectName={projectName}
+              chatTitle={chatTitle}
+              initialMessages={initialMessages}
+            />
+          </div>
+
+          {/* Main content - Memory Cards by Category */}
+          <div className='flex-1 p-1 xl:w-[25%] xl:max-w-96 xl:overflow-y-auto scrollbar-custom'>
+            {memories.length === 0 ? (
+              <MemoriesEmptyState onCreateFirst={handleCreateMemory} />
+            ) : (
+              <div className="space-y-4 p-4">
+                {/* Render categories in order */}
+                {CATEGORY_ORDER.map(({ key, label }) => {
+                  const categoryMemories = memoriesByCategory[key];
+                  if (categoryMemories.length === 0) return null;
+
+                  const isCollapsed = collapsedCategories.has(key);
+
+                  return (
+                    <div key={key} className="space-y-2">
+                      {/* Category Header */}
+                      <button
+                        onClick={() => toggleCategory(key)}
+                        className="w-full flex items-center justify-between p-3 border rounded-lg hover:bg-accent transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          {isCollapsed ? (
+                            <ChevronRightIcon className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDownIcon className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <h3 className="font-medium text-sm">{label}</h3>
+                          <Badge variant="secondary" className="text-xs">
+                            {categoryMemories.length}
+                          </Badge>
+                        </div>
+                      </button>
+
+                      {/* Category Memories */}
+                      {!isCollapsed && (
+                        <div className="gap-2 grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1 ml-2">
+                          {categoryMemories.map((memory) => (
+                            <MemoryCard
+                              key={memory.id}
+                              memory={memory}
+                              isSelected={selectedMemories.includes(memory.id)}
+                              isSelectionMode={isSelectionMode}
+                              onToggleSelection={() => toggleSelection(memory.id)}
+                              onEdit={handleEditMemory}
+                              onDelete={(id) => {
+                                setMemoryToDelete(id);
+                                setShowDeleteConfirm(true);
+                              }}
+                              getCategoryColor={getCategoryColor}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Uncategorized memories */}
+                {uncategorizedMemories.length > 0 && (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => toggleCategory('uncategorized')}
+                      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        {collapsedCategories.has('uncategorized') ? (
+                          <ChevronRightIcon className="w-4 h-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDownIcon className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        <h3 className="font-medium text-sm">Uncategorized</h3>
+                        <Badge variant="secondary" className="text-xs">
+                          {uncategorizedMemories.length}
+                        </Badge>
+                      </div>
+                    </button>
+
+                    {!collapsedCategories.has('uncategorized') && (
+                      <div className="space-y-2 ml-2">
+                        {uncategorizedMemories.map((memory) => (
+                          <MemoryCard
+                            key={memory.id}
+                            memory={memory}
+                            isSelected={selectedMemories.includes(memory.id)}
+                            isSelectionMode={isSelectionMode}
+                            onToggleSelection={() => toggleSelection(memory.id)}
+                            onEdit={handleEditMemory}
+                            onDelete={(id) => {
+                              setMemoryToDelete(id);
+                              setShowDeleteConfirm(true);
+                            }}
+                            getCategoryColor={getCategoryColor}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -241,7 +388,7 @@ export function MemoriesClient({ initialMemories, user }: MemoriesClientProps) {
         onOpenChange={setIsDialogOpen}
         onSave={handleSaveMemory}
         memory={editingMemory}
-        chatId={undefined} // Will be provided when creating from chat
+        chatId={undefined}
       />
 
       <DeleteConfirmDialog
@@ -294,13 +441,11 @@ function MemoryCard({
               >
                 {memory.title}
               </CardTitle>
-              <div className="flex items-center gap-2">
-                {memory.category && (
-                  <Badge variant="outline" className={`text-xs ${getCategoryColor(memory.category)}`}>
-                    {memory.category.replace('_', ' ')}
-                  </Badge>
-                )}
-              </div>
+              {memory.category && (
+                <Badge variant="outline" className={`text-xs ${getCategoryColor(memory.category)}`}>
+                  {memory.category.replace('_', ' ')}
+                </Badge>
+              )}
             </div>
 
             {!isSelectionMode && (
@@ -333,30 +478,11 @@ function MemoryCard({
         </CardHeader>
         <CardContent className="pt-0">
           <div
-            className="text-sm text-muted-foreground mb-4 line-clamp-3 cursor-pointer hover:text-foreground transition-colors"
+            className="text-sm text-muted-foreground line-clamp-2 cursor-pointer hover:text-foreground transition-colors"
             onClick={() => !isSelectionMode && onEdit(memory)}
           >
             {memory.content}
           </div>
-          {/* Removed the time of last update and project and chat name */}
-          {/* <div className="flex items-center justify-between text-xs text-muted-foreground">
-           <p>
-              {formatDistanceToNow(new Date(memory.updated_at), { addSuffix: true })}
-            </p>
-             <div className="flex items-center gap-1">
-              <MessageSquareIcon className="w-3 h-3" />
-              {memory.chat_id ? (
-              <Link
-                href={`/app/chat/${memory.chat_id}`}
-                className="hover:text-foreground transition-colors"
-              >
-                {memory.chats?.title || 'View chat'}
-              </Link>
-              ) : (
-                <span className="italic text-xs text-muted-foreground">{memory.chats?.title || 'No associated chat'}</span>
-              )}
-            </div> 
-          </div> */}
         </CardContent>
       </div>
     </Card>
@@ -375,10 +501,6 @@ function MemoriesEmptyState({ onCreateFirst }: { onCreateFirst: () => void }) {
           <p className="text-muted-foreground text-sm mb-6">
             Save important information for NEO to remember in future conversations from your chats.
           </p>
-          {/* <Button onClick={onCreateFirst}>
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Create Your First Memory
-          </Button> */}
         </div>
       </div>
     </div>
@@ -400,27 +522,16 @@ function MemoriesLoadingSkeleton() {
             <BrainIcon className="h-5 w-5 text-muted-foreground" />
             <h1 className="text-lg font-semibold">Memories</h1>
           </div>
-          {/* <Button size="sm" disabled>
-            <PlusIcon className="w-4 h-4 mr-2" />
-            New Memory
-          </Button> */}
         </div>
       </div>
 
       <div className="flex-1 p-6 mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-1/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-2/3 mb-4" />
-                <Skeleton className="h-3 w-1/2" />
-              </CardContent>
-            </Card>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
           ))}
         </div>
       </div>
@@ -443,10 +554,6 @@ function MemoriesErrorState({ onCreateMemory }: { onCreateMemory: () => void }) 
             <BrainIcon className="h-5 w-5 text-muted-foreground" />
             <h1 className="text-lg font-semibold">Memories</h1>
           </div>
-          {/* <Button size="sm" onClick={onCreateMemory}>
-            <PlusIcon className="w-4 h-4 mr-2" />
-            New Memory
-          </Button> */}
         </div>
       </div>
 

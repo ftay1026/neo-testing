@@ -125,6 +125,7 @@ export function AppSidebar({ user }: { user: User | null }) {
         </SidebarGroup>
 
         <SidebarRecentProjects user={user} />
+        <SidebarHistory user={user} />
       </SidebarContent>
     </Sidebar>
   );

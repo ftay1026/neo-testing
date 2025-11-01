@@ -7,6 +7,8 @@ import { UseChatHelpers } from '@ai-sdk/react';
 import { ProjectInteractionLogsSection } from './project-interaction-logs-section';
 import { ProjectFilesSection } from './project-files-section';
 import { useSidebar } from './ui/sidebar';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { MemoryToggleClient } from './memory-toggle';
 
 interface MessagesProps {
   chatId: string;
@@ -17,8 +19,11 @@ interface MessagesProps {
   isReadonly: boolean;
   isLogOpen: boolean;
   isProjectKnowledgeOpen: boolean;
+  isMemoriesOpen: boolean;
   projectId?: string
   closeSideBar: () => void;
+  hideKnowledgeAndLogs: boolean;
+
 }
 
 function PureMessages({
@@ -30,12 +35,15 @@ function PureMessages({
   isReadonly,
   isLogOpen,
   isProjectKnowledgeOpen,
+  isMemoriesOpen,
   projectId,
-  closeSideBar
+  closeSideBar,
+  hideKnowledgeAndLogs = false,
 }: MessagesProps) {
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
   const { open } = useSidebar();
+
 
   const handleSideBarCloser = () => {
     closeSideBar();
@@ -43,20 +51,20 @@ function PureMessages({
 
   return (
     <div className="flex w-full h-full px-2    flex-row justify-center items-center ">
-      {/* Left Section (Desktop only) - Interaction Logs */}
-      <div
-        className={`flex-row justify-end h-full items-start w-[25%] max-w-96  flex-shrink-0 pt-14 p-6 pr-0 ${open
-            ? "hidden min-[1280px]:hidden min-[1500px]:flex"
-            : "hidden min-[1280px]:flex"
+      {/* Left Section (Desktop only) - Memories Logs */}
+      {!hideKnowledgeAndLogs && <div
+        className={`flex-row justify-end h-full items-start w-[25%] max-w-96   flex-shrink-0 pt-14 p-6 pr-0 ${open
+          ? "hidden min-[1280px]:hidden min-[1500px]:flex"
+          : "hidden min-[1280px]:flex"
           }`}
       >
         <div
-          className={`bg-background/50 rounded-lg h-full overflow-y-auto max-w-80 pr-4 flex flex-col justify-start items-baseline scrollbar-custom ${isLogOpen ? "visible" : "invisible"
+          className={`bg-background/50 rounded-lg h-full overflow-y-auto max-w-80 pr-4 flex flex-col justify-start items-baseline scrollbar-custom ${isMemoriesOpen ? "visible" : "invisible"
             }`}
         >
-          <ProjectInteractionLogsSection projectId={projectId!} />
+          <MemoryToggleClient />
         </div>
-      </div>
+      </div>}
 
 
       {/* Middle Section - Messages */}
@@ -85,21 +93,34 @@ function PureMessages({
         </div>
       </div>
 
-      {/* Right Section (Desktop only) - Project Knowledge */}
+      {/* Right Section (Desktop only) -  Interaction Logs & Project Knowledge  */}
 
-      <div
-         className={`flex-row justify-start h-full items-start w-[25%] max-w-96  flex-shrink-0 pt-10 p-6 pl-1 ${open
-            ? "hidden min-[1280px]:hidden min-[1500px]:flex"
-            : "hidden min-[1280px]:flex"
-          }`}
-      >
-        <div className={`rounded-lg h-full overflow-y-auto scrollbar-custom flex flex-col ${isProjectKnowledgeOpen ? "visible" : "invisible"
-            }`}>
-          <ProjectFilesSection projectId={projectId!} />
+      {!hideKnowledgeAndLogs && (
+        <div className={`flex flex-col w-[25%] max-w-96 h-full overflow-y-auto scrollbar-custom ${open
+          ? "hidden min-[1280px]:hidden min-[1500px]:flex"
+          : "hidden min-[1280px]:flex"
+          }`}>
+
+          <div
+            className={`flex flex-col justify-start items-start flex-shrink-0 pt-10 p-6 pl-1 ${isProjectKnowledgeOpen ? "block" : "hidden"
+              }`}
+          >
+            <div className="rounded-lg flex flex-col w-full">
+              <ProjectFilesSection projectId={projectId!} />
+            </div>
+          </div>
+
+          <div
+            className={`flex flex-col justify-start items-start flex-shrink-0 pt-6 p-6 pr-0 ${isLogOpen ? "visible" : "invisible"
+              }`}
+          >
+            <div className="bg-background/50 rounded-lg max-w-80 pr-4 flex flex-col justify-start items-baseline w-full">
+              <ProjectInteractionLogsSection projectId={projectId!} />
+            </div>
+          </div>
+
         </div>
-      </div>
-
-
+      )}
       {/* Mobile Slider (only visible <1200px) */}
       <div className="xl:hidden">
         {/* Left side slider for interaction logs */}

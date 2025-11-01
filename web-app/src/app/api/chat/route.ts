@@ -101,7 +101,7 @@ export async function POST(request: Request) {
       parentChatId = null,
       initialChatTitle = null,
     }: {
-      id: string;
+      id: string; 
       messages: Array<UIMessage>;
       mode?: ModeType | null;
       projectId?: string | null;
@@ -110,9 +110,13 @@ export async function POST(request: Request) {
       initialChatTitle?: string | null;
     } = await request.json();
 
+    console.log('Chat API called with ID:', id);
+
     const supabase: SupabaseClient<Database> = await createClient();
     
     const user = await getUser(supabase);
+
+    console.log("Hi i am here");
     
     if (!user?.id) {
       return new Response('Unauthorized', { status: 401 });

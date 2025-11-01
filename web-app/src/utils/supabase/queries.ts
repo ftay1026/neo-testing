@@ -45,6 +45,8 @@ export async function saveChat(
     inheritance_summary: chatSummary
   });
 
+  console.log("New chat created with ID:", id);
+
   if (error) throw error;
   return id;
 }
@@ -56,6 +58,19 @@ export async function getChatsByUserId(supabase: SupabaseClient<Database>) {
     .select('*, projects!inner(name)')
     .order('created_at', { ascending: false });
 
+  if (error) throw error;
+  return data;
+}
+
+//Get memory chat for current user
+export async function getMemoryChats(supabase: SupabaseClient<Database>, project_id: string) {
+ const { data, error } = await supabase
+    .from('chats')
+    .select('*, projects!inner(name, description, is_default)')
+    .eq('title', "Memories")
+    .eq('project_id', project_id)
+    .maybeSingle();
+    
   if (error) throw error;
   return data;
 }

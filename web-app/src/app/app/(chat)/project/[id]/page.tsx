@@ -29,6 +29,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
       getChatsByProjectId(supabase, projectId),
       getDocumentsByProjectId(supabase, projectId)
     ]);
+    console.log("project",project);
+    console.log("chats",chats);
 
     if (!project) {
       return notFound();

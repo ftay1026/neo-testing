@@ -62,6 +62,9 @@ function PureMultimodalInput({
   placeholder = "Send a message...", // New prop with default value
   customSubmit, // New prop for custom submit handler
   projectId, // Add projectId prop
+  isMemoryChat = false, // NEW: Add this prop with default false
+
+
 }: {
   chatId: string;
   input: UseChatHelpers['input'];
@@ -77,6 +80,8 @@ function PureMultimodalInput({
   placeholder?: string;
   customSubmit?: (e: React.FormEvent) => Promise<void>;
   projectId?: string; // Add projectId prop
+  isMemoryChat?: boolean; // NEW: Add to type definition
+
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -85,28 +90,28 @@ function PureMultimodalInput({
   const [isToolMode, setIsToolMode] = useState(false);
 
   // Use the enhanced hook
-  const { 
-    checkAndShowLogDialog, 
-    createLogForChat, 
-    closeLogDialog, 
-    isCreatingLog, 
-    logDialogState 
+  const {
+    checkAndShowLogDialog,
+    createLogForChat,
+    closeLogDialog,
+    isCreatingLog,
+    logDialogState
   } = useChatLogs(chatId);
-  
+
   // Local state for inherit dialog
   const [isInheritingChat, setIsInheritingChat] = useState(false);
   const [showInheritDialog, setShowInheritDialog] = useState(false);
 
   // Add memory-related state
-  const [isMemoryMode, setIsMemoryMode] = useState(false);
-  const isMemoryModeRef = useRef(false);
+  const [isMemoryMode, setIsMemoryMode] = useState(isMemoryChat);
+  const isMemoryModeRef = useRef(isMemoryChat);
   const [showMemoryDialog, setShowMemoryDialog] = useState(false);
   const [extractedMemory, setExtractedMemory] = useState<{
     title: string;
     content: string;
     category: string;
   } | null>(null);
-  
+
   const { extractMemoryFromMessage, isExtracting } = useMemoryExtraction();
   const { createMemory } = useMemories();
 
@@ -121,6 +126,13 @@ function PureMultimodalInput({
     isMemoryModeRef.current = isMemoryMode;
   }, [isMemoryMode]);
 
+  // Keep isMemoryMode in sync with isMemoryChat prop
+  useEffect(() => {
+    if (isMemoryChat) {
+      setIsMemoryMode(true);
+      isMemoryModeRef.current = true;
+    }
+  }, [isMemoryChat]);
   const adjustHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -186,18 +198,18 @@ function PureMultimodalInput({
       // Store the continue message in localStorage (same as ProjectChat)
       localStorage.setItem(`initial-message-${newChatId}`, continueMessage);
       localStorage.setItem(`initial-mode-${newChatId}`, mode);
-      
+
       // Navigate to inherit flag and parent chat id in URL params
       const params = new URLSearchParams({
         parentChatId: chatId, // Parent chat to inherit from
         inherit: 'true', // Flag to trigger server-side summary generation
         hasInitialMessage: 'true', // New approach
       });
-      
+
       if (projectId) {
         params.append('projectId', projectId);
       }
-      
+
       router.push(`/app/chat/${newChatId}?${params.toString()}`);
     } catch (error) {
       toast.error('Failed to create inherited chat');
@@ -218,7 +230,7 @@ function PureMultimodalInput({
     if (isMemoryModeRef.current && input.trim()) {
       try {
         const extracted = await extractMemoryFromMessage(input);
-        
+
         if (extracted?.shouldRemember) {
           setExtractedMemory({
             title: extracted.title || 'Untitled Memory',
@@ -226,14 +238,17 @@ function PureMultimodalInput({
             category: extracted.category || 'personal_info'
           });
           setShowMemoryDialog(true);
-          setIsMemoryMode(false); // Reset memory mode
+          if (!isMemoryChat)
+            setIsMemoryMode(false); // Reset memory mode
         } else {
           toast.info(extracted?.message || 'No memorable information found in this message');
-          setIsMemoryMode(false); // Reset memory mode
+          if (!isMemoryChat)
+            setIsMemoryMode(false); // Reset memory mode
         }
       } catch (error) {
         console.error('Memory extraction error:', error);
-        setIsMemoryMode(false); // Reset memory mode on error
+        if (!isMemoryChat)
+          setIsMemoryMode(false); // Reset memory mode on error
       }
     }
 
@@ -245,7 +260,7 @@ function PureMultimodalInput({
       return;
     }
 
-    window.history.replaceState({}, '', `/app/chat/${chatId}`);
+    //window.history.replaceState({}, '', `/app/chat/${chatId}`);
 
     handleSubmit(undefined);
 
@@ -285,7 +300,7 @@ function PureMultimodalInput({
       return (
         <>
           ⚠️ No new messages have been added since your last log was created{' '}
-          {analysis.lastLogDate.toLocaleDateString()}. Creating another log will 
+          {analysis.lastLogDate.toLocaleDateString()}. Creating another log will
           capture the same conversation content.
         </>
       );
@@ -294,8 +309,8 @@ function PureMultimodalInput({
     if (!analysis.recommendCreate && analysis.hasNewMessages) {
       return (
         <>
-          You have {analysis.messageCount} new message{analysis.messageCount !== 1 ? 's' : ''} 
-          since your last log, but they might not contain substantial content for a meaningful reflection. 
+          You have {analysis.messageCount} new message{analysis.messageCount !== 1 ? 's' : ''}
+          since your last log, but they might not contain substantial content for a meaningful reflection.
           Would you still like to create a log?
         </>
       );
@@ -304,7 +319,7 @@ function PureMultimodalInput({
     return (
       <>
         This will create a reflection log of your conversation. The AI will analyze{' '}
-        {analysis.messageCount > 0 && `${analysis.messageCount} new message${analysis.messageCount !== 1 ? 's' : ''}`} and 
+        {analysis.messageCount > 0 && `${analysis.messageCount} new message${analysis.messageCount !== 1 ? 's' : ''}`} and
         generate insights about your discussion, breakthroughs, and key learnings.
         {analysis.lastLogDate && (
           <><br /><br />New messages since last log: {analysis.messageCount}</>
@@ -315,82 +330,134 @@ function PureMultimodalInput({
 
   return (
     <>
-      <div className="relative w-full flex flex-col gap-4">
-        <Textarea
-          data-testid="multimodal-input"
-          ref={textareaRef}
-          placeholder={placeholder}
-          value={input}
-          onChange={handleInput}
-          className={cn(
-            'min-h-[120px] max-h-[calc(75dvh)] resize-none rounded-2xl !text-base pb-16 pr-14 pl-4 pt-4 dark:border-zinc-700',
-            className,
-          )}
-          rows={3} // Increased from 2
-          autoFocus
-          onKeyDown={(event) => {
-            if (
-              event.key === 'Enter' &&
-              !event.shiftKey &&
-              !event.nativeEvent.isComposing
-            ) {
-              event.preventDefault();
+      {!isMemoryChat ? (
+        // Regular Chat Input
+        <div className="relative w-full flex flex-col gap-4">
+          <Textarea
+            data-testid="multimodal-input"
+            ref={textareaRef}
+            placeholder={placeholder}
+            value={input}
+            onChange={handleInput}
+            className={cn(
+              'min-h-[120px] max-h-[calc(75dvh)] resize-none rounded-2xl !text-base pb-16 pr-14 pl-4 pt-4 dark:border-zinc-700',
+              className,
+            )}
+            rows={3}
+            autoFocus
+            onKeyDown={(event) => {
+              if (
+                event.key === 'Enter' &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing
+              ) {
+                event.preventDefault();
 
-              if (status !== 'ready') {
-                toast.error('Please wait for the model to finish its response!');
-              } else {
-                submitForm();
+                if (status !== 'ready') {
+                  toast.error('Please wait for the model to finish its response!');
+                } else {
+                  submitForm();
+                }
               }
-            }
-          }}
-        />
+            }}
+          />
 
-        <div className="absolute bottom-3 w-full">
-          <div className="flex flex-row gap-2 items-center justify-between px-3">
-            <div className="flex items-center gap-2">
-              <ModeButton
-                mode={mode}
-                handleModeChange={handleModeChange}
-              />
-              <ToolCaseButton
-                isToolMode={isToolMode}
-                onToggleToolMode={() => setIsToolMode(!isToolMode)}
-              />
-              <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out ${
-                isToolMode 
-                  ? 'max-w-xs opacity-100 transform translate-x-0' 
+          <div className="absolute bottom-3 w-full">
+            <div className="flex flex-row gap-2 items-center justify-between px-3">
+              <div className="flex items-center gap-2">
+                <ModeButton
+                  mode={mode}
+                  handleModeChange={handleModeChange}
+                />
+                <ToolCaseButton
+                  isToolMode={isToolMode}
+                  onToggleToolMode={() => setIsToolMode(!isToolMode)}
+                />
+                <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out ${isToolMode
+                  ? 'max-w-xs opacity-100 transform translate-x-0'
                   : 'max-w-0 opacity-0 transform -translate-x-4'
-              }`}>
-                <LogButton
-                  onCreateLog={handleCreateLogClick}
-                  isCreating={isCreatingLog}
-                />
-                <InheritChatButton
-                  onInheritChat={handleInheritChatClick}
-                  isInheriting={isInheritingChat}
-                  hasMessages={messages.length > 0}
-                />
-                <MemoryButton
-                  isMemoryMode={isMemoryMode}
-                  onToggleMemoryMode={() => setIsMemoryMode(!isMemoryMode)}
-                  isExtracting={isExtracting}
-                />
+                  }`}>
+                  <LogButton
+                    onCreateLog={handleCreateLogClick}
+                    isCreating={isCreatingLog}
+                  />
+                  <InheritChatButton
+                    onInheritChat={handleInheritChatClick}
+                    isInheriting={isInheritingChat}
+                    hasMessages={messages.length > 0}
+                  />
+                  <MemoryButton
+                    isMemoryMode={isMemoryMode}
+                    onToggleMemoryMode={() => {
+                      if (!isMemoryChat) {
+                        setIsMemoryMode(!isMemoryMode);
+                      }
+                    }}
+                    isExtracting={isExtracting}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="w-fit">
-              {status === 'submitted' ? (
-                <StopButton stop={stop} setMessages={setMessages} />
-              ) : (
-                <SendButton
-                  input={input}
-                  submitForm={submitForm}
-                />
-              )}
+              <div className="w-fit">
+                {status === 'submitted' ? (
+                  <StopButton stop={stop} setMessages={setMessages} />
+                ) : (
+                  <SendButton
+                    input={input}
+                    submitForm={submitForm}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        // Memory Chat Input - Simplified
+        <div className="relative w-full flex flex-col">
+          <Textarea
+            data-testid="multimodal-input"
+            ref={textareaRef}
+            placeholder={placeholder}
+            value={input}
+            onChange={handleInput}
+            className={cn(
+              'min-h-[60px] max-h-[200px] resize-none rounded-2xl !text-base py-3 pr-12 pl-4 dark:border-zinc-700',
+              className,
+            )}
+            rows={2}
+            autoFocus
+            onKeyDown={(event) => {
+              if (
+                event.key === 'Enter' &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing
+              ) {
+                event.preventDefault();
+
+                if (status !== 'ready') {
+                  toast.error('Please wait for the model to finish its response!');
+                } else {
+                  submitForm();
+                }
+              }
+            }}
+          />
+
+          {/* Button inside textarea - positioned absolutely */}
+          <div className="absolute right-2 bottom-2">
+            {status === 'submitted' ? (
+              <StopButton stop={stop} setMessages={setMessages} />
+            ) : (
+              <SendButton
+                input={input}
+                submitForm={submitForm}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+
 
       {/* Log Creation Confirmation Dialog */}
       <AlertDialog open={logDialogState.show} onOpenChange={closeLogDialog}>
@@ -416,8 +483,8 @@ function PureMultimodalInput({
           <AlertDialogHeader>
             <AlertDialogTitle>Continue Conversation</AlertDialogTitle>
             <AlertDialogDescription>
-              This will create a new chat that continues this conversation. The AI will 
-              receive a summary of your current discussion to maintain context, allowing 
+              This will create a new chat that continues this conversation. The AI will
+              receive a summary of your current discussion to maintain context, allowing
               you to seamlessly continue where you left off.
               <br /><br />
               You'll be taken to a new chat page with the conversation context preserved.
@@ -511,7 +578,7 @@ const SendButton = memo(PureSendButton, (prevProps, nextProps) => {
 });
 
 // Mode button to switch between coach, and assistant modes in system prompt
-const PureModeButton = ({mode, handleModeChange}: {mode: ModeType; handleModeChange: (mode: ModeType) => void}) => {
+const PureModeButton = ({ mode, handleModeChange }: { mode: ModeType; handleModeChange: (mode: ModeType) => void }) => {
   const handleToggleChange = () => {
     const newMode = mode === 'assistant' ? 'coach' : 'assistant';
     handleModeChange(newMode);
@@ -520,7 +587,7 @@ const PureModeButton = ({mode, handleModeChange}: {mode: ModeType; handleModeCha
     { value: 'assistant', label: 'Assistant' },
     { value: 'coach', label: 'Coach' },
   ];
-  
+
   return (
     <div className='flex items-center gap-2'>
       <Tooltip>
@@ -533,7 +600,7 @@ const PureModeButton = ({mode, handleModeChange}: {mode: ModeType; handleModeCha
               onPressedChange={handleToggleChange}
             >
               <span className='text-xs'>
-                { mode === 'coach' ? 'C' : 'C' }
+                {mode === 'coach' ? 'C' : 'C'}
               </span>
             </Toggle>
           </div>
@@ -551,7 +618,7 @@ const ModeButton = memo(PureModeButton, (prevProps, nextProps) => {
 });
 
 const PureLogButton = ({
-  onCreateLog, 
+  onCreateLog,
   isCreating
 }: {
   onCreateLog: () => void;
@@ -587,7 +654,7 @@ const LogButton = memo(PureLogButton, (prevProps, nextProps) => {
 });
 
 const PureInheritChatButton = ({
-  onInheritChat, 
+  onInheritChat,
   isInheriting,
   hasMessages
 }: {
@@ -678,11 +745,10 @@ const PureToolCaseButton = ({
         <TooltipTrigger asChild>
           <div>
             <Toggle
-              className={`h-8 w-fit cursor-pointer px-2 transition-all duration-200 ${
-                isToolMode 
-                  ? 'tool-active' 
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
+              className={`h-8 w-fit cursor-pointer px-2 transition-all duration-200 ${isToolMode
+                ? 'tool-active'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
               aria-label='Toggle Tools'
               pressed={isToolMode}
               onPressedChange={onToggleToolMode}

@@ -242,6 +242,34 @@ export function SidebarHistory({ user }: { user: User | null }) {
   return (
     <>
       <SidebarGroup>
+        <div className="px-2 py-1 text-xs text-sidebar-foreground/50">
+          Recent Chats
+        </div>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {history && history.length > 0 ? (
+              history.slice(0, 5).map((chat) => (
+                <ChatItem
+                  key={chat.id}
+                  chat={chat}
+                  isActive={chat.id === id}
+                  onDelete={(chatId) => {
+                    setDeleteId(chatId);
+                    setShowDeleteDialog(true);
+                  }}
+                  setOpenMobile={setOpenMobile}
+                />
+              ))
+            ) : (
+              <div className="px-2 py-6 text-zinc-500 w-full flex flex-row justify-center items-center text-sm gap-2">
+                No recent chats
+              </div>
+            )}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    
+      {/*  <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
             {history &&
@@ -354,7 +382,8 @@ export function SidebarHistory({ user }: { user: User | null }) {
               })()}
           </SidebarMenu>
         </SidebarGroupContent>
-      </SidebarGroup>
+      </SidebarGroup> */}
+      
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
