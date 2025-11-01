@@ -24,6 +24,14 @@ import Link from 'next/link';
 import { useSidebar } from './ui/sidebar';
 import { MemoryChat } from './memory-chat';
 
+ interface MemoryChatDetails{
+  MemoryChatId: string;
+  projectId: string;
+  projectName: string;
+  chatTitle: string;
+  initialMessages: UIMessage[];
+ }
+
 interface ChatProps {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -39,6 +47,7 @@ interface ChatProps {
   chatSummary?: string | null; // Optional chat summary
   parentChatTitle?: string | null; // Optional parent chat title
   isDefaultProject?: boolean; // Optional prop to indicate if this is the default project
+  memoryChatDetails: MemoryChatDetails; // Optional memory chat details
 }
 
 export function Chat({
@@ -56,6 +65,7 @@ export function Chat({
   chatSummary = null, // Optional chat summary
   parentChatTitle = null, // Optional parent chat title
   isDefaultProject = false, // Optional prop to indicate if this is the default project
+  memoryChatDetails,
 }: ChatProps) {
   const { mutate } = useSWRConfig();
   const { mutate: mutateCredits } = useCredits();
@@ -312,11 +322,11 @@ export function Chat({
           }}
         >
           <MemoryChat
-            chatId={'1ef201b3-eb10-4a9b-a0b6-1b42003c8165'}
-            chatTitle={'Memories'}
-            projectName={'Default Project'}
-            projectId={'10df9624-7fc5-44ec-a8a7-c5f2e42939aa'}
-            initialMessages={[]}
+            chatId={memoryChatDetails.MemoryChatId}
+            chatTitle={memoryChatDetails.chatTitle}
+            projectName={memoryChatDetails.projectName}
+            projectId={memoryChatDetails.projectId}
+            initialMessages={memoryChatDetails.initialMessages}
           />
         </div>
       )}

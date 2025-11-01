@@ -2,7 +2,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { Chat } from '@/components/chat';
-import { getChatById, getMessagesByChatId, getUser } from '@/utils/supabase/queries';
+import { getChatById, getMemoryChats, getMessagesByChatId, getUser, getUserDefaultProject, getUserMemories, saveChat } from '@/utils/supabase/queries';
 import { notFound } from 'next/navigation';
 import { Attachment, UIMessage } from 'ai';
 import { Database } from '@/types/database.types';
@@ -20,9 +20,51 @@ export default async function Page(props: {
   const supabase = await createClient();
   const user = await getUser(supabase);
 
+  // Memory Chat details 
+  let memoryChatDetails = {
+      MemoryChatId: "",
+      projectId: "",
+      projectName: "",
+      chatTitle: "",
+      initialMessages: [] as UIMessage[]
+    };
+
+
   if (!user) {
     return redirect("/sign-in");
   }
+
+  
+    // Fetch memories chat data server-side for better performance and SEO
+    try {
+      const project = await getUserDefaultProject(supabase);
+      let chat = await getMemoryChats(supabase, project.id);
+      if (!chat) {
+        // Create "Memories" chat if it doesn't exist
+        const chat_id = await saveChat(supabase, generateUUID(), "Memories", project.id, null, null, "private");
+        chat = await getChatById(supabase, chat_id);
+      }
+  
+      // Added null check for safety
+      if (!chat) {
+        throw new Error('Failed to create or retrieve memory chat');
+      }
+  
+      const messagesFromDb = await getMessagesByChatId(supabase, chat.id);
+      const initialMessages = convertToUIMessages(messagesFromDb);
+      memoryChatDetails = {
+        MemoryChatId: chat.id,
+        projectId: project.id,
+        projectName: chat?.projects.name || 'Default Project',
+        chatTitle: chat?.title || 'Memories',
+        initialMessages: initialMessages
+      }
+      console.log("project", project);
+      console.log("Memory chat is already exist", chat);
+    } catch (error) {
+      console.error('Error loading project:', error);
+      return notFound();
+    }
   
   const params = await props.params;
   const searchParams = await props.searchParams;
@@ -150,6 +192,7 @@ export default async function Page(props: {
         chatSummary={chatSummary} // Always pass summary (null for non-inherited chats)
         parentChatTitle={parentChatTitle}
         isDefaultProject={isDefaultProject}
+        memoryChatDetails={memoryChatDetails}
       />
     </>
   );
