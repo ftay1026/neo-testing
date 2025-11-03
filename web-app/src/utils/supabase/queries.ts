@@ -63,16 +63,18 @@ export async function getChatsByUserId(supabase: SupabaseClient<Database>) {
 }
 
 //Get memory chat for current user
-export async function getMemoryChats(supabase: SupabaseClient<Database>, project_id: string) {
- const { data, error } = await supabase
+export async function getMemoryChats(supabase: any, project_id: string) {
+  const { data, error } = await supabase
     .from('chats')
     .select('*, projects!inner(name, description, is_default)')
     .eq('title', "Memories")
     .eq('project_id', project_id)
-    .maybeSingle();
-    
+    .order('created_at', { ascending: false }); // Get newest first 
+
   if (error) throw error;
-  return data;
+  
+  // Always return the first (most recent) one, or null if none exist
+  return data?.[0] || null;
 }
 
 // Get a specific chat by ID
@@ -356,8 +358,8 @@ export async function getUserMemories(supabase: SupabaseClient<Database>) {
       updated_at
     `)
     .order('created_at', { ascending: false });
-    console.log('SSR memories:', memories);
-    
+  console.log('SSR memories:', memories);
+
   if (error) throw error;
   return memories || [];
 }
