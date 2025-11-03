@@ -441,11 +441,6 @@ function MemoryCard({
               >
                 {memory.title}
               </CardTitle>
-              {memory.category && (
-                <Badge variant="outline" className={`text-xs ${getCategoryColor(memory.category)}`}>
-                  {memory.category.replace('_', ' ')}
-                </Badge>
-              )}
             </div>
 
             {!isSelectionMode && (

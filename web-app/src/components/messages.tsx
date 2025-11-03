@@ -59,7 +59,7 @@ function PureMessages({
           }`}
       >
         <div
-          className={`bg-background/50 rounded-lg h-full overflow-y-auto max-w-80 pr-4 flex flex-col justify-start items-baseline scrollbar-custom ${isMemoriesOpen ? "visible" : "invisible"
+          className={`bg-background/50 rounded-lg h-full w-full overflow-y-auto max-w-80 pr-4 flex flex-col justify-start items-baseline scrollbar-custom ${isMemoriesOpen ? "visible" : "invisible"
             }`}
         >
           <MemoryToggleClient />
@@ -111,7 +111,7 @@ function PureMessages({
           </div>
 
           <div
-            className={`flex flex-col justify-start items-start flex-shrink-0 pt-6 p-6 pr-0 ${isLogOpen ? "visible" : "invisible"
+            className={`flex flex-col justify-start items-start flex-shrink-0 pt-6 p-6 pr-0 ${isLogOpen ? "block" : "hidden"
               }`}
           >
             <div className="bg-background/50 rounded-lg max-w-80 pr-4 flex flex-col justify-start items-baseline w-full">
