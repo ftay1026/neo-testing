@@ -24,13 +24,13 @@ import Link from 'next/link';
 import { useSidebar } from './ui/sidebar';
 import { MemoryChat } from './memory-chat';
 
- interface MemoryChatDetails{
+interface MemoryChatDetails {
   MemoryChatId: string;
   projectId: string;
   projectName: string;
   chatTitle: string;
   initialMessages: UIMessage[];
- }
+}
 
 interface ChatProps {
   id: string;
@@ -79,9 +79,9 @@ export function Chat({
   const [clientNewMessage, setClientNewMessage] = useState<UIMessage | null>(null);
   const [logOpen, setLogOpen] = useState(false);
   const [projectKnowledgeOpen, setProjectKnowledgeOpen] = useState(false);
-  const [memoriesOpen, setMemoriesOpen] = useState(false); 
+  const [memoriesOpen, setMemoriesOpen] = useState(false);
 
-    // Add state to control MemoryChat visibility
+  // Add state to control MemoryChat visibility
   const [showMemoryChat, setShowMemoryChat] = useState(false);
 
   // Handle localStorage retrieval on client-side
@@ -309,15 +309,23 @@ export function Chat({
   return (
     <div className="flex flex-col min-w-0 h-dvh bg-background">
 
-        {/* MemoryChat - Small floating chat box */}
+
+
+      {/* MemoryChat - Floating chat box with responsive positioning */}
       {showMemoryChat && (
         <div
-          className="absolute w-[20%] min-w-[400px] hidden xl:block border-2 border-white bg-background rounded-lg overflow-hidden shadow-2xl"
+          className="absolute hidden xl:block border-2 border-border bg-background rounded-lg overflow-hidden shadow-2xl transition-all duration-300"
           style={{
-            left: '22%',
-            bottom: '20%', // Above the input area
-            transform: 'translateX(-50%)',
-            height: '500px',
+            // Smart positioning: 
+            // - If right sidebars (logs/knowledge) are open, position on left
+            // - If only memories (left) is open, position on right
+            // - Default to right for balance
+            right: (logOpen || projectKnowledgeOpen) ? 'auto' : (open ? '420px' : '80px'),
+            left: (logOpen || projectKnowledgeOpen) ? (memoriesOpen ? 'calc(420px + 20px)' : (open ? 'calc(var(--sidebar-width, 280px) + 80px)' : '80px')) : 'auto',
+            bottom: '150px',
+            width: 'clamp(380px, 25vw, 480px)',
+            height: '550px',
+            maxHeight: 'calc(100vh - 200px)',
             zIndex: 9999,
           }}
         >
@@ -330,7 +338,7 @@ export function Chat({
           />
         </div>
       )}
-      
+
       <ChatHeader
         chatId={id}
         selectedVisibilityType={selectedVisibilityType}
@@ -392,44 +400,44 @@ export function Chat({
         )
       }
       <div className='flex justify-center min-w-0 '>
-      
-          <div className=" flex-col justify-center items-center space-y-3 mr-1 hidden xl:flex">
-        {/*Memories Toggle Button */}
-        <div className="flex items-start -mt-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-8 w-8 bg-[#18181b] rounded-full flex flex-col items-center justify-center ${memoriesOpen ? 'bg-accent' :''}`}
-                onClick={() => setMemoriesOpen(!memoriesOpen)}
-              >
-                <BrainIcon className='size-5' />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              {memoriesOpen ? "Close Memories" : "Open Memories"}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-         {/* Memory Chat Toggle Button*/}
-        <div className="mb-8 ">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-8 w-8 bg-[#18181b] pt-0.5 rounded-full flex flex-col items-center justify-center ${showMemoryChat ? 'bg-accent': ''}`}
-                onClick={() => setShowMemoryChat(!showMemoryChat)}
-              >
-                <MessageSquarePlus className='size-5' />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {showMemoryChat ? "Close Memory Chat" : "Open Memory Chat"}
-            </TooltipContent>
-          </Tooltip>
-        </div>
+
+        <div className=" flex-col justify-center items-center space-y-3 mr-1 hidden xl:flex">
+          {/*Memories Toggle Button */}
+          <div className="flex items-start -mt-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 bg-[#18181b] rounded-full flex flex-col items-center justify-center ${memoriesOpen ? 'bg-accent' : ''}`}
+                  onClick={() => setMemoriesOpen(!memoriesOpen)}
+                >
+                  <BrainIcon className='size-5' />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                {memoriesOpen ? "Close Memories" : "Open Memories"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          {/* Memory Chat Toggle Button*/}
+          <div className="mb-8 ">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 bg-[#18181b] pt-0.5 rounded-full flex flex-col items-center justify-center ${showMemoryChat ? 'bg-accent' : ''}`}
+                  onClick={() => setShowMemoryChat(!showMemoryChat)}
+                >
+                  <MessageSquarePlus className='size-5' />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {showMemoryChat ? "Close Memory Chat" : "Open Memory Chat"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         <form className={`flex px-1.5 bg-background pb-4 md:pb-6 gap-2 min-w-0 flex-1 max-w-3xl ${!open ? "min-[1500px]:max-w-3xl min-[1280px]:max-w-[50%]" : "max-w-3xl min-[1500px]:max-w-[50%] min-[1800px]:max-w-3xl"
@@ -451,42 +459,42 @@ export function Chat({
           )}
         </form>
         <div className="flex flex-col justify-center items-center space-y-3 ml-1">
-        {/*Knowledge Toggle Button */}
-        <div className="flex items-start -mt-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-8 w-8 bg-[#18181b] rounded-full flex flex-col items-center justify-center ${projectKnowledgeOpen ? 'bg-accent' :''}`}
-                onClick={() => setProjectKnowledgeOpen(!projectKnowledgeOpen)}
-              >
-                <School className='size-5' />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              {projectKnowledgeOpen ? "Close Knowledge" : "Open Knowledge"}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-         {/* Log Toggle Button*/}
-        <div className="mb-8 ">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-8 w-8 bg-[#18181b] pt-0.5 rounded-full flex flex-col items-center justify-center ${logOpen ? 'bg-accent': ''}`}
-                onClick={() => setLogOpen(!logOpen)}
-              >
-                <BookOpenText className='size-5' />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {logOpen ? "Close Logs" : "Open Logs"}
-            </TooltipContent>
-          </Tooltip>
-        </div>
+          {/*Knowledge Toggle Button */}
+          <div className="flex items-start -mt-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 bg-[#18181b] rounded-full flex flex-col items-center justify-center ${projectKnowledgeOpen ? 'bg-accent' : ''}`}
+                  onClick={() => setProjectKnowledgeOpen(!projectKnowledgeOpen)}
+                >
+                  <School className='size-5' />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                {projectKnowledgeOpen ? "Close Knowledge" : "Open Knowledge"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          {/* Log Toggle Button*/}
+          <div className="mb-8 ">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 bg-[#18181b] pt-0.5 rounded-full flex flex-col items-center justify-center ${logOpen ? 'bg-accent' : ''}`}
+                  onClick={() => setLogOpen(!logOpen)}
+                >
+                  <BookOpenText className='size-5' />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {logOpen ? "Close Logs" : "Open Logs"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </div>
 
