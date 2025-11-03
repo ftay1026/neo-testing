@@ -135,8 +135,7 @@ export function MemoryChat({
     <div className="flex flex-col h-full bg-background">
       {/* Fixed header with title */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
-        <h2 className="text-lg font-semibold">{chatTitle}</h2>
-        <span className="text-sm text-muted-foreground">{projectName}</span>
+        <h2 className="text-lg font-semibold">Learning</h2>
       </div>
 
       {/* Scrollable messages area */}
