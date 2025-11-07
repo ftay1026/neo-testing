@@ -41,13 +41,13 @@ interface ChatProps {
   projectName?: string;
   chatTitle?: string;
   initialMode?: ModeType;
-  isNewChat?: boolean; // Optional prop to indicate if this is a new chat
-  newMessage?: UIMessage | null; // Optional prop for new message
-  parentChatId?: string | null; // Optional parent chat ID
-  chatSummary?: string | null; // Optional chat summary
-  parentChatTitle?: string | null; // Optional parent chat title
-  isDefaultProject?: boolean; // Optional prop to indicate if this is the default project
-  memoryChatDetails: MemoryChatDetails; // Optional memory chat details
+  isNewChat?: boolean;
+  newMessage?: UIMessage | null;
+  parentChatId?: string | null;
+  chatSummary?: string | null;
+  parentChatTitle?: string | null;
+  isDefaultProject?: boolean;
+  memoryChatDetails: MemoryChatDetails;
 }
 
 export function Chat({
@@ -59,18 +59,17 @@ export function Chat({
   projectName,
   chatTitle: initialChatTitle,
   initialMode = 'coach',
-  isNewChat = false, // Default to false if not provided
-  newMessage = null, // Default to null if not provided
-  parentChatId = null, // Optional parent chat ID
-  chatSummary = null, // Optional chat summary
-  parentChatTitle = null, // Optional parent chat title
-  isDefaultProject = false, // Optional prop to indicate if this is the default project
+  isNewChat = false,
+  newMessage = null,
+  parentChatId = null,
+  chatSummary = null,
+  parentChatTitle = null,
+  isDefaultProject = false,
   memoryChatDetails,
 }: ChatProps) {
   const { mutate } = useSWRConfig();
   const { mutate: mutateCredits } = useCredits();
   const { open } = useSidebar();
-
 
   const [mode, setMode] = useState<ModeType>(initialMode);
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
@@ -80,9 +79,11 @@ export function Chat({
   const [logOpen, setLogOpen] = useState(false);
   const [projectKnowledgeOpen, setProjectKnowledgeOpen] = useState(false);
   const [memoriesOpen, setMemoriesOpen] = useState(false);
-
-  // Add state to control MemoryChat visibility
   const [showMemoryChat, setShowMemoryChat] = useState(false);
+
+  // Refs and state for memory chat positioning
+  const brainButtonRef = useRef<HTMLButtonElement>(null);
+  const [chatboxPosition, setChatboxPosition] = useState<{ right?: string; left?: string }>({});
 
   // Handle localStorage retrieval on client-side
   useEffect(() => {
@@ -92,16 +93,13 @@ export function Chat({
         const storedMode = localStorage.getItem(`initial-mode-${id}`) as ModeType;
 
         if (storedMessage) {
-          // Clean up localStorage immediately
           localStorage.removeItem(`initial-message-${id}`);
           localStorage.removeItem(`initial-mode-${id}`);
 
-          // Set the mode if it was stored
           if (storedMode) {
             setMode(storedMode);
           }
 
-          // Create the message object
           const messageObj: UIMessage = {
             id: generateUUID(),
             role: 'user',
@@ -122,9 +120,42 @@ export function Chat({
     }
   }, [id, isNewChat]);
 
+  // Calculate memory chat position
+  useEffect(() => {
+    const calculatePosition = () => {
+      if (showMemoryChat && brainButtonRef.current) {
+        const buttonRect = brainButtonRef.current.getBoundingClientRect();
+        const chatboxWidth = Math.min(Math.max(380, window.innerWidth * 0.25), 480);
+        const chatboxLeft = buttonRect.left - chatboxWidth;
+        
+        const sidebarWidth = open ? 280 : 0;
+        
+        if (chatboxLeft < sidebarWidth + 20) {
+          setChatboxPosition({ 
+            left: `${sidebarWidth + 20}px`,
+            right: undefined 
+          });
+        } else {
+          const rightDistance = window.innerWidth - buttonRect.left;
+          setChatboxPosition({ 
+            right: `${rightDistance}px`,
+            left: undefined 
+          });
+        }
+      }
+    };
+
+    calculatePosition();
+    
+    window.addEventListener('resize', calculatePosition);
+    return () => window.removeEventListener('resize', calculatePosition);
+  }, [showMemoryChat, open]);
+
   const closeSideBarHandler = () => {
     logOpen && setLogOpen(!logOpen);
     projectKnowledgeOpen && setProjectKnowledgeOpen(!projectKnowledgeOpen);
+    memoriesOpen && setMemoriesOpen(!memoriesOpen);
+    
   }
 
   const handleModeChange = (newMode: ModeType) => {
@@ -154,9 +185,6 @@ export function Chat({
       mutate('/api/history');
       mutateCredits();
 
-      // Hint: data is undefined in the onFinish callback because it's still being processed
-
-      // Clean up URL after first message if this was a new chat
       if (isNewChat) {
         const url = new URL(window.location.href);
         url.searchParams.delete('hasInitialMessage');
@@ -170,8 +198,7 @@ export function Chat({
     onError: (error) => {
       console.log('error in useChat:', error)
 
-      // ERROR ANALYSIS
-      const currentMessages = [...messages]; // Create snapshot
+      const currentMessages = [...messages];
       const lastMessage = currentMessages[currentMessages.length - 1];
       const secondLastMessage = currentMessages[currentMessages.length - 2];
 
@@ -185,24 +212,20 @@ export function Chat({
         status: status
       });
 
-      // SCENARIO-BASED ERROR HANDLING
       setMessages(prev => {
         const prevSnapshot = [...prev];
         const last = prevSnapshot[prevSnapshot.length - 1];
         const secondLast = prevSnapshot[prevSnapshot.length - 2];
 
-        // SCENARIO 1: Stream failed before AI response
         if (last?.role === 'user') {
           console.log('Scenario 1: Stream failed before AI response');
           setInput(last.content);
           return prevSnapshot.slice(0, -1);
         }
 
-        // SCENARIO 2: Stream failed during AI response OR save failed after completion
         else if (last?.role === 'assistant' && secondLast?.role === 'user') {
           console.log('Scenario 2: Stream failed during/after AI response');
 
-          // Check if this was a database save error vs streaming error
           if (error.message.includes('Failed to save')) {
             console.log('Database save failed - removing complete conversation turn');
           } else {
@@ -210,10 +233,9 @@ export function Chat({
           }
 
           setInput(secondLast.content);
-          return prevSnapshot.slice(0, -2); // Remove both user and AI messages
+          return prevSnapshot.slice(0, -2);
         }
 
-        // SCENARIO 3: Unknown error state
         else {
           console.warn('Unknown error state - no automatic recovery');
           console.log('Message pattern not recognized:', {
@@ -222,7 +244,6 @@ export function Chat({
             messageCount: prevSnapshot.length
           });
 
-          // Don't modify messages in unknown state
           return prevSnapshot;
         }
       });
@@ -257,7 +278,7 @@ export function Chat({
     }
   }, [data]);
 
-  // Auto-submit effect - now using clientNewMessage from localStorage
+  // Auto-submit effect
   useEffect(() => {
     if (autoSubmitRef.current) {
       console.log('⏭️ Skipping duplicate useEffect execution');
@@ -289,7 +310,6 @@ export function Chat({
       autoSubmitRef.current = true;
       setHasAutoSubmitted(true);
 
-      // Append the message to trigger AI response
       append({
         id: clientNewMessage.id,
         role: 'user',
@@ -309,19 +329,13 @@ export function Chat({
   return (
     <div className="flex flex-col min-w-0 h-dvh bg-background">
 
-
-
-      {/* MemoryChat - Floating chat box with responsive positioning */}
+      {/* MemoryChat - Floating chat box aligned with BrainIcon button */}
       {showMemoryChat && (
         <div
           className="absolute hidden xl:block border-2 border-border bg-background rounded-lg overflow-hidden shadow-2xl transition-all duration-300"
           style={{
-            // Smart positioning: 
-            // - If right sidebars (logs/knowledge) are open, position on left
-            // - If only memories (left) is open, position on right
-            // - Default to right for balance
-            right: (logOpen || projectKnowledgeOpen) ? 'auto' : (open ? '420px' : '80px'),
-            left: (logOpen || projectKnowledgeOpen) ? (memoriesOpen ? 'calc(420px + 20px)' : (open ? 'calc(var(--sidebar-width, 280px) + 80px)' : '80px')) : 'auto',
+            ...(chatboxPosition.right ? { right: chatboxPosition.right } : {}),
+            ...(chatboxPosition.left ? { left: chatboxPosition.left } : {}),
             bottom: '150px',
             width: 'clamp(380px, 25vw, 480px)',
             height: '550px',
@@ -368,6 +382,7 @@ export function Chat({
           </div>
         </div>
       )}
+
       <div className=" flex-row justify-start items-start flex flex-1 h-full overflow-hidden">
         <Messages
           chatId={id}
@@ -399,14 +414,15 @@ export function Chat({
           </div>
         )
       }
-      <div className='flex justify-center min-w-0 '>
 
-        <div className=" flex-col justify-center items-center space-y-3 mr-1 hidden xl:flex">
+      <div className='flex justify-center min-w-0 '>
+        <div className="flex flex-col justify-start items-center space-y-3 mr-1  xl:justify-center ">
           {/*Memories Toggle Button */}
-          <div className="flex items-start -mt-3">
+          <div className="flex items-start mt-3 xl:-mt-3">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  ref={brainButtonRef}
                   variant="ghost"
                   size="icon"
                   className={`h-8 w-8 bg-[#18181b] rounded-full flex flex-col items-center justify-center ${memoriesOpen ? 'bg-accent' : ''}`}
@@ -421,7 +437,7 @@ export function Chat({
             </Tooltip>
           </div>
           {/* Memory Chat Toggle Button*/}
-          <div className="mb-8 ">
+          <div className="mb-8 hidden xl:block ">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -458,6 +474,7 @@ export function Chat({
             />
           )}
         </form>
+
         <div className="flex flex-col justify-center items-center space-y-3 ml-1">
           {/*Knowledge Toggle Button */}
           <div className="flex items-start -mt-3">
@@ -497,10 +514,6 @@ export function Chat({
           </div>
         </div>
       </div>
-
-
     </div>
   );
 }
-
-
