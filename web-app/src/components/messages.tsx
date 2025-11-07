@@ -124,29 +124,34 @@ function PureMessages({
       {/* Mobile Slider (only visible <1200px) */}
       <div className="xl:hidden">
         {/* Left side slider for interaction logs */}
-        {isLogOpen && (
+        {isMemoriesOpen && (
           <div className="fixed left-0 top-0 h-full w-[300px] bg-background/95 backdrop-blur-sm z-50 shadow-lg transform transition-transform duration-300 ease-in-out">
             <div className="p-4 h-full overflow-y-auto">
               <div className="bg-background/50 rounded-lg h-full">
-                <ProjectInteractionLogsSection projectId={projectId!} />
+                <MemoryToggleClient />
               </div>
             </div>
           </div>
         )}
 
         {/* Right side slider for project knowledge */}
-        {isProjectKnowledgeOpen && (
+        {(isProjectKnowledgeOpen || isLogOpen) && (
           <div className="fixed right-0 top-0 h-full w-[300px] bg-background/95 backdrop-blur-sm z-50 shadow-lg transform transition-transform duration-300 ease-in-out">
             <div className="p-4 h-full overflow-y-auto">
               <div className="rounded-lg h-full">
+                {isProjectKnowledgeOpen && (
                 <ProjectFilesSection projectId={projectId!} />
+                )}
+                {isLogOpen && (
+                <ProjectInteractionLogsSection projectId={projectId!} />
+                )}
               </div>
             </div>
           </div>
         )}
 
         {/* Backdrop overlay when either slider is open */}
-        {(isLogOpen || isProjectKnowledgeOpen) && (
+        {(isLogOpen || isProjectKnowledgeOpen || isMemoriesOpen) && (
           <div
             className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
             onClick={handleSideBarCloser}
