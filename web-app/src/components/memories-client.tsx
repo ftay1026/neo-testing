@@ -219,7 +219,7 @@ const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
               )}
 
               {/* Action buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center absolute top-27 left-28 gap-2">
                 {isSelectionMode ? (
                   <>
                     {selectedMemories.length > 0 && (
@@ -266,7 +266,7 @@ const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
           </div>
         </div>
 
-        <div className='flex flex-1 flex-row justify-center xl:overflow-y-hidden'>
+        <div className='flex flex-1  flex-row justify-center xl:overflow-y-hidden'>
           {/* Memory Chat */}
           <div className='hidden xl:block w-full min-w-0 max-w-3xl flex-1 overflow-hidden'>
             <MemoryChat
@@ -279,7 +279,7 @@ const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
           </div>
 
           {/* Main content - Memory Cards by Category */}
-          <div className='flex-1 p-1 xl:w-[25%] xl:max-w-96 xl:overflow-y-auto scrollbar-custom'>
+          <div className='flex-1 mt-12 mb-5 p-1 xl:w-[25%] xl:max-w-96 xl:overflow-y-auto scrollbar-custom'>
             {memories.length === 0 ? (
               <MemoriesEmptyState onCreateFirst={handleCreateMemory} />
             ) : (
