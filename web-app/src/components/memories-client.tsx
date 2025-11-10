@@ -219,7 +219,7 @@ const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
               )}
 
               {/* Action buttons */}
-              <div className="flex items-center absolute top-27 left-28 gap-2">
+              <div className="flex items-center xl:absolute xl:top-27 xl:left-28 gap-2">
                 {isSelectionMode ? (
                   <>
                     {selectedMemories.length > 0 && (
