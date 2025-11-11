@@ -197,6 +197,8 @@ export async function POST(request: Request) {
       });
     }
 
+    console.log('chat api credit processing for user message id:', userMessage.id);
+
     // Get user's default project if no specific project ID is provided
     let targetProjectId = projectId;
 
@@ -500,6 +502,8 @@ export async function POST(request: Request) {
                   // } else {
                   //   console.log(`Deducted ${actualCredits} credits for ${inputTokens}+${outputTokens} tokens`);
                   // }
+
+                  console.log(`Preparing to store credits in redis: customer=${customerId} chat=${id} user=${user.id} input=${inputTokens} output=${outputTokens} totalCredits=${actualCredits}`);
 
                   // Track usage in Redis (non-blocking)
                   redisCreditTracker.trackUsage({
