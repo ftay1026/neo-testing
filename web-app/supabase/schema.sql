@@ -1,5 +1,6 @@
 
 
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -311,10 +312,6 @@ $$;
 ALTER FUNCTION "public"."get_user_id_by_email"("p_email" "text") OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."get_user_id_by_email"("p_email" "text") IS 'Safely retrieves user_id from auth.users by email address';
-
-
-
 CREATE OR REPLACE FUNCTION "public"."grant_signup_credits"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -430,6 +427,38 @@ $$;
 
 
 ALTER FUNCTION "public"."match_user_memories"("query_embedding" "extensions"."vector", "match_threshold" double precision, "match_count" integer, "p_user_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."search_documents_by_title"("p_search_term" "text", "p_user_id" "uuid", "p_project_id" "uuid", "p_match_count" integer DEFAULT 5) RETURNS TABLE("id" bigint, "title" "text", "content" "text", "created_at" timestamp with time zone, "updated_at" timestamp with time zone)
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    d.id,
+    d.title,
+    d.content,
+    d.created_at,
+    d.updated_at
+  FROM documents d
+  WHERE d.user_id = p_user_id
+    AND (p_project_id IS NULL OR d.project_id = p_project_id)
+    AND d.title ILIKE '%' || p_search_term || '%'
+  ORDER BY 
+    CASE 
+      WHEN LOWER(d.title) = LOWER(p_search_term) THEN 1  -- Exact match
+      WHEN LOWER(d.title) LIKE LOWER(p_search_term) || '%' THEN 2  -- Starts with
+      WHEN LOWER(d.title) LIKE '%' || LOWER(p_search_term) || '%' THEN 3  -- Contains
+      ELSE 4
+    END,
+    d.updated_at DESC
+  LIMIT p_match_count;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."search_documents_by_title"("p_search_term" "text", "p_user_id" "uuid", "p_project_id" "uuid", "p_match_count" integer) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_direct_file_and_chunks"("p_document_id" bigint, "p_user_id" "uuid", "p_title" "text", "p_content" "text", "p_chunks" "jsonb") RETURNS bigint
@@ -1517,6 +1546,12 @@ GRANT ALL ON FUNCTION "public"."match_user_memories"("query_embedding" "extensio
 
 
 
+GRANT ALL ON FUNCTION "public"."search_documents_by_title"("p_search_term" "text", "p_user_id" "uuid", "p_project_id" "uuid", "p_match_count" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."search_documents_by_title"("p_search_term" "text", "p_user_id" "uuid", "p_project_id" "uuid", "p_match_count" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_documents_by_title"("p_search_term" "text", "p_user_id" "uuid", "p_project_id" "uuid", "p_match_count" integer) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."update_direct_file_and_chunks"("p_document_id" bigint, "p_user_id" "uuid", "p_title" "text", "p_content" "text", "p_chunks" "jsonb") TO "anon";
 GRANT ALL ON FUNCTION "public"."update_direct_file_and_chunks"("p_document_id" bigint, "p_user_id" "uuid", "p_title" "text", "p_content" "text", "p_chunks" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_direct_file_and_chunks"("p_document_id" bigint, "p_user_id" "uuid", "p_title" "text", "p_content" "text", "p_chunks" "jsonb") TO "service_role";
@@ -1685,4 +1720,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 
-RESET ALL;
+

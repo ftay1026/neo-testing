@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "13.0.5"
   }
   graphql_public: {
     Tables: {
@@ -693,10 +693,7 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_user_id_by_email: {
-        Args: { p_email: string }
-        Returns: string
-      }
+      get_user_id_by_email: { Args: { p_email: string }; Returns: string }
       match_document_sections_by_project: {
         Args: {
           match_count?: number
@@ -727,6 +724,21 @@ export type Database = {
           title: string
         }[]
       }
+      search_documents_by_title: {
+        Args: {
+          p_match_count?: number
+          p_project_id: string
+          p_search_term: string
+          p_user_id: string
+        }
+        Returns: {
+          content: string
+          created_at: string
+          id: number
+          title: string
+          updated_at: string
+        }[]
+      }
       update_direct_file_and_chunks: {
         Args: {
           p_chunks: Json
@@ -737,9 +749,19 @@ export type Database = {
         }
         Returns: number
       }
-      update_document_and_chunks: {
-        Args:
-          | {
+      update_document_and_chunks:
+        | {
+            Args: {
+              p_chunks: Json
+              p_drive_file_id: string
+              p_last_modified: string
+              p_name: string
+              p_user_id: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
               p_chunks: Json
               p_drive_file_id: string
               p_file_extension: string
@@ -748,15 +770,8 @@ export type Database = {
               p_name: string
               p_user_id: string
             }
-          | {
-              p_chunks: Json
-              p_drive_file_id: string
-              p_last_modified: string
-              p_name: string
-              p_user_id: string
-            }
-        Returns: number
-      }
+            Returns: number
+          }
     }
     Enums: {
       [_ in never]: never
