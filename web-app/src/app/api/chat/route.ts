@@ -70,20 +70,20 @@ async function generateTitleFromUserMessage({
 //       input: text
 //     })
 //   });
-  
+
 //   const result = await response.json();
 
 //   // Check if the response has the expected structure
 //   if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
 //     throw new Error('Invalid response structure from OpenAI API');
 //   }
-  
+
 //   if (!result.data[0].embedding || !Array.isArray(result.data[0].embedding)) {
 //     throw new Error('Invalid embedding data from OpenAI API');
 //   }
 
 //   const vector: number[] = result.data[0].embedding;
-  
+
 //   // Normalize vector for better similarity search performance
 //   const magnitude = Math.sqrt(vector.reduce((sum: number, val: number) => sum + val * val, 0));
 //   return vector.map((val: number) => val / magnitude);
@@ -115,9 +115,9 @@ export async function POST(request: Request) {
     } = await request.json();
 
     const supabase: SupabaseClient<Database> = await createClient();
-    
+
     const user = await getUser(supabase);
-    
+
     if (!user?.id) {
       return new Response('Unauthorized', { status: 401 });
     }
@@ -180,7 +180,7 @@ export async function POST(request: Request) {
 
     // Check actual balance (including pending)
     if (actualBalance < 0) {
-      return new Response('Insufficient credits. Please purchase more credits to continue.', { 
+      return new Response('Insufficient credits. Please purchase more credits to continue.', {
         status: 402,
         statusText: 'Insufficient credits'
       });
@@ -191,7 +191,7 @@ export async function POST(request: Request) {
     const userMessage = getMostRecentUserMessage(messages);
 
     if (!userMessage) {
-      return new Response('No user message found', { 
+      return new Response('No user message found', {
         status: 400,
         statusText: 'Invalid request'
       });
@@ -240,7 +240,7 @@ export async function POST(request: Request) {
 
     // Generate embedding and search for relevant documents
     // const queryEmbedding = await generateEmbedding(userMessage.content);
-    
+
     // Search for relevant document chunks
     // const { data: relevantDocs, error: searchError } = await supabase.rpc(
     //   'match_document_sections_by_project',
@@ -252,11 +252,11 @@ export async function POST(request: Request) {
     //     p_project_id: targetProjectId
     //   }
     // );
-    
+
     // if (searchError) {
     //   console.error('Document search error:', searchError);
     // }
-    
+
     // Construct context from relevant documents
     // let documentContext = '';
     // if (relevantDocs && relevantDocs.length > 0) {
@@ -264,7 +264,7 @@ export async function POST(request: Request) {
     //   relevantDocs.forEach((doc, index) => {
     //     documentContext += `[${doc.filename}]\n${doc.content}\n\n`;
     //   });
-      
+
     //   documentContext = `---\nUse the below context to provide relevant insights to the user, but don't explicitly mention that you're reading from these files unless the user asks about their Files.\n---\n\n` + documentContext + `---\nEnd of context from user Files.\n---\n\n`;
     // }
 
@@ -290,7 +290,7 @@ export async function POST(request: Request) {
     //   relevantMemories.forEach((memory) => {
     //     memoryContext += `[${memory.title}${memory.category ? ` - ${memory.category}` : ''}]\n${memory.content}\n\n`;
     //   });
-      
+
     //   memoryContext = `---\nUse the below personal information about the user to provide more personalized and relevant responses. These are things the user has specifically asked you to remember:\n---\n\n` + memoryContext + `---\nEnd of personal memories.\n---\n\n`;
     // }
 
@@ -303,9 +303,9 @@ export async function POST(request: Request) {
     // ============================================================================
     // NEW: Use Search Service for semantic search
     // ============================================================================
-    
+
     const searchService = createSearchService(supabase);
-    
+
     const searchResults = await searchService.semanticSearch(
       {
         originalQuery: userMessage.content,
@@ -320,7 +320,7 @@ export async function POST(request: Request) {
         matchThreshold: 0.7
       }
     );
-    
+
     // Format results for context
     const searchContext = searchService.formatResultsForContext(searchResults);
 
@@ -391,7 +391,7 @@ export async function POST(request: Request) {
     // console.log('Processed messages for chat completion:', processedMessages);
 
     console.log('length of user messages being sent to model:', messagesWithContext.filter(m => m.role === 'user').length);
-    
+
     // processed messages with priming prompt added as system message at the start only if there is only one user message (first message in chat)
     const processedMessages: UIMessage[] = (messagesWithContext.filter(m => m.role === 'user').length === 1) ? [
       { role: 'system', content: primingPrompt(new Date().toLocaleDateString()), id: 'system-priming-prompt', parts: [{ type: 'text', text: primingPrompt(new Date().toLocaleDateString()) }] },
@@ -427,11 +427,11 @@ export async function POST(request: Request) {
                 );
 
                 console.log('Title search results:', titleResults);
-                
+
                 if (titleResults.length === 0) {
                   return 'No documents found with that title.';
                 }
-                
+
                 return searchService.formatResultsForContext(titleResults);
               }
             })
@@ -484,14 +484,56 @@ export async function POST(request: Request) {
               }
               // Save messages
               await saveMessages(supabase, messagesToSave);
-
+              let billingSettings;
               // Deduct actual credits based on token usage
               if (usage) {
                 try {
+
+                  const { data, error } = await supabase
+                    .from('billing_settings')
+                    .select('*')
+                    .order('updated_at', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                  if (error) {
+                    console.error('Error fetching billing settings:', error.message);
+                  }
+
+                  billingSettings = data || {
+                    credit_value: 0.008,
+                    input_rate: 0.000003,
+                    output_rate: 0.000015,
+                    margin_multiplier: 1.5
+                  }; // fallback default
+
+                  //  Calculate required credits and API cost
+
                   const inputTokens = usage.promptTokens || 0;
                   const outputTokens = usage.completionTokens || 0;
-                  const actualCredits = calculateRequiredCredits(inputTokens, outputTokens);
-                  
+                  const calculated_results = calculateRequiredCredits(
+                    inputTokens,
+                    outputTokens,
+                    billingSettings
+                  );
+                  const actualCredits = calculated_results.required_credits;
+                  const api_cost = calculated_results.total_cost;
+
+                  const { error: rpcError } = await supabase.rpc('log_usage_transaction', {
+                    p_customer_id: customerId,
+                    p_tokens_used: inputTokens + outputTokens,
+                    p_credits_used: actualCredits,
+                    p_api_cost: api_cost,
+                    p_model: "claude-sonnet-4-20250514",
+                    p_credit_value: billingSettings.credit_value
+                  });
+
+                  if (rpcError) {
+                    console.error('Error logging usage transaction:', rpcError.message);
+                  }
+
+
+
                   // const { data: hasEnoughCredits, error: creditError } = await supabaseAdmin.rpc('check_and_deduct_credits', {
                   //   p_customer_id: customerId,
                   //   p_required_credits: actualCredits
@@ -522,7 +564,7 @@ export async function POST(request: Request) {
 
                   // Calculate and send new balance to client
                   const newBalance = actualBalance - actualCredits;
-                  
+
                   dataStream.writeData({
                     type: 'credit-update',
                     balance: newBalance,
@@ -542,9 +584,9 @@ export async function POST(request: Request) {
                   const newTitle = await generateTitleFromUserMessage({
                     message: userMessage,
                   });
-                  
+
                   await updateChatTitle(supabase, id, newTitle);
-                  
+
                   // Send title update through data stream
                   dataStream.writeData({
                     type: 'title-update',
@@ -569,10 +611,31 @@ export async function POST(request: Request) {
         });
       },
       onError: (error: any) => {
-        console.error('Error in streamText', error);
-        const errorMessage: string = error?.message || 'Oops, an error occurred!';
-        return errorMessage;
-      },
+        console.error("Error in streamText", error);
+
+        const resultError = error?.message || "Unknown error";
+
+        // Fire-and-forget - no await, no catch needed
+        supabase.rpc("log_system_event", {
+          p_event_type: "error",
+          p_category: "stream-error",
+          p_message: resultError,
+          p_metadata: {
+            stack: error?.stack || null,
+            model: "claude-sonnet-4-20250514",
+            chatId: id,
+            userId: user?.id || "unknown"
+          },
+          p_user_id: user?.id || null,
+          p_customer_id: customerId || null
+        }).then(({ error: rpcErr }) => {
+          if (rpcErr) console.error("Failed to log error event:", rpcErr);
+        });
+
+        return resultError;
+      }
+
+
     });
   } catch (error) {
     console.error('Error in POST request', error);

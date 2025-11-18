@@ -94,6 +94,8 @@ export type Database = {
           customer_id: string
           description: string | null
           id: string
+          expires_at: string
+          is_expired: boolean
         }
         Insert: {
           amount: number
@@ -101,6 +103,8 @@ export type Database = {
           customer_id: string
           description?: string | null
           id?: string
+          expires_at?: string
+          is_expired?: boolean
         }
         Update: {
           amount?: number
@@ -108,6 +112,8 @@ export type Database = {
           customer_id?: string
           description?: string | null
           id?: string
+          expires_at?: string
+          is_expired?: boolean
         }
         Relationships: [
           {
@@ -126,6 +132,8 @@ export type Database = {
           customer_id: string
           id: string
           updated_at: string
+          expires_at: string
+          is_expired: boolean
         }
         Insert: {
           created_at?: string
@@ -133,6 +141,8 @@ export type Database = {
           customer_id: string
           id?: string
           updated_at?: string
+          expires_at?: string
+          is_expired?: boolean
         }
         Update: {
           created_at?: string
@@ -140,6 +150,8 @@ export type Database = {
           customer_id?: string
           id?: string
           updated_at?: string
+          expires_at?: string
+          is_expired?: boolean
         }
         Relationships: [
           {
@@ -158,6 +170,7 @@ export type Database = {
           email: string
           updated_at: string
           user_id: string | null
+          is_banned?: boolean
         }
         Insert: {
           created_at?: string
@@ -165,6 +178,7 @@ export type Database = {
           email: string
           updated_at?: string
           user_id?: string | null
+          is_banned?: boolean
         }
         Update: {
           created_at?: string
@@ -172,6 +186,7 @@ export type Database = {
           email?: string
           updated_at?: string
           user_id?: string | null
+          is_banned?: boolean
         }
         Relationships: []
       }
@@ -209,6 +224,290 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gift_codes: {
+        Row: {
+          id: string
+          code: string
+          credits_amount: number
+          max_uses: number
+          current_uses: number
+          expires_at: string
+          is_active: boolean
+          created_by: string
+          created_at: string
+          updated_at: string
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          code: string
+          credits_amount: number
+          max_uses?: number
+          current_uses?: number
+          expires_at: string
+          is_active?: boolean
+          created_by: string
+          created_at?: string
+          updated_at?: string
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          code?: string
+          credits_amount?: number
+          max_uses?: number
+          current_uses?: number
+          expires_at?: string
+          is_active?: boolean
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      gift_code_redemptions: {
+        Row: {
+          id: string
+          code_id: string
+          customer_id: string
+          user_id: string | null
+          credits_received: number
+          transaction_id: string | null
+          redeemed_at: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          id?: string
+          code_id: string
+          customer_id: string
+          user_id?: string | null
+          credits_received: number
+          transaction_id?: string | null
+          redeemed_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          id?: string
+          code_id?: string
+          customer_id?: string
+          user_id?: string | null
+          credits_received?: number
+          transaction_id?: string | null
+          redeemed_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_code_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "gift_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_code_redemptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["customer_id"]
+          }
+        ]
+      }
+      system_logs: {
+        Row: {
+          id: string;
+          event_type: string; // 'info' | 'warning' | 'error'
+          category: string; // 'usage' | 'api' | 'admin' | 'system' | 'stream-error'
+          message: string;
+          metadata: Json | null;
+          user_id: string | null;
+          customer_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_type: string;
+          category: string;
+          message: string;
+          metadata?: Json | null;
+          user_id?: string | null;
+          customer_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_type?: string;
+          category?: string;
+          message?: string;
+          metadata?: Json | null;
+          user_id?: string | null;
+          customer_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "system_logs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      }
+      package_transaction: {
+        Row: {
+          transaction_id: string;       // uuid
+          customer_id: string;          // fk → customers.customer_id
+          pricing_tier_id: string | null; // fk → pricing_tier.id (nullable)
+          created_at: string;           // timestamp with time zone
+          currency: string;             // text
+          payment_id: string;           // text
+        };
+        Insert: {
+          transaction_id?: string;
+          customer_id: string;
+          pricing_tier_id?: string | null;
+          created_at?: string;
+          currency: string;
+          payment_id: string;
+        };
+        Update: {
+          transaction_id?: string;
+          customer_id?: string;
+          pricing_tier_id?: string | null;
+          created_at?: string;
+          currency?: string;
+          payment_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "package_transaction_customer_id_fkey";
+            columns: ["customer_id"];
+            referencedRelation: "customers";
+            referencedColumns: ["customer_id"];
+          },
+          {
+            foreignKeyName: "package_transaction_pricing_tier_id_fkey";
+            columns: ["pricing_tier_id"];
+            referencedRelation: "pricing_tier";
+            referencedColumns: ["id"];
+          }
+        ];
+      }
+      pricing_tier: {
+        Row: {
+          id: string;
+          name: string;
+          amount: number;
+          credits: number;
+          description: string | null;
+          savings: string | null;
+          currency: string;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          amount: number;
+          credits: number;
+          description?: string | null;
+          savings?: string | null;
+          currency: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          amount?: number;
+          credits?: number;
+          description?: string | null;
+          savings?: string | null;
+          currency?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      }
+      billing_settings: {
+        Row: {
+          id: string;                 // uuid
+          credit_value: number;       // numeric
+          input_rate: number;         // numeric
+          output_rate: number;        // numeric
+          margin_multiplier: number;  // numeric
+          updated_at: string;         // timestamp with time zone
+          updated_by: string | null;  // uuid (auth.users)
+        };
+        Insert: {
+          id?: string;
+          credit_value: number;
+          input_rate: number;
+          output_rate: number;
+          margin_multiplier: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          credit_value?: number;
+          input_rate?: number;
+          output_rate?: number;
+          margin_multiplier?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "billing_settings_updated_by_fkey";
+            columns: ["updated_by"];
+            referencedRelation: "users"; // auth.users
+            referencedColumns: ["id"];
+          }
+        ];
+      }
+      usage_transactions: {
+        Row: {
+          id: string;               // uuid
+          customer_id: string;      // uuid FK → customers.customer_id
+          tokens_used: number;      // bigint
+          credits_used: number;     // numeric
+          api_cost: number;         // numeric
+          profit: number;           // numeric
+          model: string;            // text
+          created_at: string;       // timestamp
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          tokens_used: number;
+          credits_used: number;
+          api_cost: number;
+          profit: number;
+          model: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_id?: string;
+          tokens_used?: number;
+          credits_used?: number;
+          api_cost?: number;
+          profit?: number;
+          model?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "usage_transactions_customer_id_fkey";
+            columns: ["customer_id"];
+            referencedRelation: "customers";
+            referencedColumns: ["customer_id"];
+          }
+        ];
       }
       documents: {
         Row: {
@@ -625,6 +924,243 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_gift_code: {
+        Args: {
+          p_admin_user_id: string
+          p_code: string
+          p_credits_amount: number
+          p_max_uses?: number
+          p_expires_at?: string
+          p_notes?: string
+        }
+        Returns: {
+          success: boolean
+          message: string
+          code_id: string
+        }[]
+      }
+      admin_bulk_gift_from_credits: {
+        Args: {
+          p_amount: number
+        },
+        Returns: void
+      }
+      admin_total_revenue: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      admin_active_packages: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      admin_growth_rate: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      admin_revenue_trend: {
+        Args: Record<string, never>;
+        Returns: {
+          month: string;
+          revenue: number;
+        }[];
+      };
+      admin_sales_dashboard: {
+        Args: Record<string, never>;
+        Returns: {
+          stats: {
+            total_sales: number;
+            active_packages: number;
+            this_month_sales: number;
+            total_transactions: number;
+          };
+          revenue_by_package: {
+            month: string;
+            starter: number;
+            transformation: number;
+            professional: number;
+          }[];
+          monthly_revenue: {
+            month: string;
+            revenue: number;
+          }[];
+          package_performance: {
+            package_id: string;
+            package_name: string;
+            credits: number;
+            units_sold: number;
+            total_revenue: number;
+            avg_per_day: number;
+          }[];
+          recent_transactions: {
+            transaction_id: string;
+            user_email: string;
+            package_name: string;
+            credits: number;
+            amount: number;
+            date: string;
+          }[];
+        };
+      };
+      admin_package_distribution: {
+        Args: Record<string, never>;
+        Returns: {
+          pricing_tier_id: string;
+          package_count: number;
+          amount_per_package: number;
+        }[];
+      };
+      admin_financial_analytics: {
+        Args: Record<string, never>;
+        Returns: {
+          billing_settings: Json;
+          total_revenue: number;
+          total_api_cost: number;
+          total_profit: number;
+          revenue_cost_profit: Json[];
+          profit_per_user: Json[] | null;
+          usage_transactions: Json[];
+        };
+      };
+
+      admin_recent_transactions: {
+        Args: Record<string, never>;
+        Returns: {
+          email: string;
+          pricing_tier: string;
+          amount: number;
+          created_at: string;
+        }[];
+      };
+      admin_dashboard_all: {
+        Args: Record<string, never>;
+        Returns: {
+          total_customers: number;
+          total_revenue: number;
+          active_packages: number;
+          growth_rate: number;
+          revenue_trend: Json[];
+          package_distribution: Json[];
+          recent_transactions: Json[];
+        };
+      }
+      admin_get_customers: {
+        Args: {
+          search_text: string;
+          limit_count: number;
+          offset_count: number;
+        };
+        Returns: Array<{
+          customer_id: string;
+          email: string | null;
+          user_id: string | null;
+          name: string | null;
+          is_banned: boolean;
+          credits: number | null;
+          created_at: string | null;
+        }>;
+      }
+      admin_get_customers_count: {
+        Args: {
+          search_text: string;
+        };
+        Returns: number;
+      };
+      admin_update_credit_expiry: {
+        Args: {
+          p_customer_id: string
+          p_new_expiry: string
+        }
+        Returns: void
+      }
+      redeem_gift_code: {
+        Args: {
+          p_customer_id: string
+          p_user_id: string
+          p_code: string
+          p_ip_address?: string
+          p_user_agent?: string
+        }
+        Returns: {
+          success: boolean
+          message: string
+          credits_received: number
+          new_balance: number
+        }[]
+      }
+      admin_update_billing_settings: {
+        Args: {
+          p_credit_value: number;
+          p_input_rate: number;
+          p_output_rate: number;
+          p_margin_multiplier: number;
+        };
+        Returns: {
+          id: string;
+          credit_value: number;
+          input_rate: number;
+          output_rate: number;
+          margin_multiplier: number;
+          created_at: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+      }
+      get_total_positive_credits: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_all_gift_codes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          code: string
+          credits_amount: number
+          max_uses: number
+          current_uses: number
+          remaining_uses: number
+          expires_at: string
+          is_active: boolean
+          status: string
+          created_at: string
+          notes: string | null
+        }[]
+      }
+
+      get_gift_code_redemptions: {
+        Args: {
+          p_code_id?: string
+        }
+        Returns: {
+          redemption_id: string
+          code: string
+          customer_email: string
+          credits_received: number
+          redeemed_at: string
+        }[]
+      }
+
+      deactivate_gift_code: {
+        Args: {
+          p_code_id: string
+        }
+        Returns: {
+          success: boolean
+          message: string
+        }[]
+      }
+
+      edit_gift_code: {
+        Args: {
+          p_code_id: string
+          p_max_uses?: number
+          p_expires_at?: string
+          p_notes?: string
+        }
+        Returns: {
+          success: boolean
+          message: string
+        }[]
+      }
       add_credits: {
         Args: { p_amount: number; p_customer_id: string; p_description: string }
         Returns: undefined
@@ -632,6 +1168,43 @@ export type Database = {
       check_and_deduct_credits: {
         Args: { p_customer_id: string; p_required_credits: number }
         Returns: boolean
+      }
+      get_expiring_credits: {
+        Args: { p_days_threshold?: number }
+        Returns: {
+          customer_id: string
+          email: string
+          full_name: string | null
+          credits: number
+          expires_at: string
+          days_left: number
+        }[]
+      }
+      log_system_event: {
+        Args: {
+          p_event_type: string;
+          p_category: string;
+          p_message: string;
+          p_metadata?: Json;
+          p_user_id?: string | null;
+          p_customer_id?: string | null;
+        };
+        Returns: void;
+      }
+      get_total_expiring_credits: {
+        Args: { p_days_threshold?: number }
+        Returns: number
+      }
+      log_usage_transaction: {
+        Args: {
+          p_customer_id: string;
+          p_tokens_used: number;
+          p_credits_used: number;
+          p_api_cost: number;
+          p_model: string;
+          p_credit_value: number;
+        };
+        Returns: void;
       }
       create_direct_file_and_chunks: {
         Args: {
@@ -750,28 +1323,28 @@ export type Database = {
         Returns: number
       }
       update_document_and_chunks:
-        | {
-            Args: {
-              p_chunks: Json
-              p_drive_file_id: string
-              p_last_modified: string
-              p_name: string
-              p_user_id: string
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              p_chunks: Json
-              p_drive_file_id: string
-              p_file_extension: string
-              p_file_type: string
-              p_last_modified: string
-              p_name: string
-              p_user_id: string
-            }
-            Returns: number
-          }
+      | {
+        Args: {
+          p_chunks: Json
+          p_drive_file_id: string
+          p_last_modified: string
+          p_name: string
+          p_user_id: string
+        }
+        Returns: number
+      }
+      | {
+        Args: {
+          p_chunks: Json
+          p_drive_file_id: string
+          p_file_extension: string
+          p_file_type: string
+          p_last_modified: string
+          p_name: string
+          p_user_id: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
@@ -788,116 +1361,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   graphql_public: {
