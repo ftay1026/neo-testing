@@ -95,30 +95,32 @@ export default function SystemLogsPage() {
   };
 
   // System logs columns
-  const logColumns: Column<FormattedLog>[] = [
-    {
-      key: "level",
-      header: "Level",
-      render: (value) => {
-        const styles = {
-          error: "bg-red-600 text-white",
-          warning: "bg-orange-600 text-white",
-          info: "bg-gray-700 text-white",
-        };
-        const labels = {
-          error: "Error",
-          warning: "Warning",
-          info: "Info",
-        };
-        return (
-          <span
-            className={`px-3 py-1 rounded-lg text-xs font-medium ${styles[value]}`}
-          >
-            {labels[value]}
-          </span>
-        );
-      },
+ type LogLevel = "error" | "warning" | "info";
+
+const logColumns: Column<FormattedLog>[] = [
+  {
+    key: "level",
+    header: "Level",
+    render: (value: LogLevel) => {
+      const styles: Record<LogLevel, string> = {
+        error: "bg-red-600 text-white",
+        warning: "bg-orange-600 text-white",
+        info: "bg-gray-700 text-white",
+      };
+
+      const labels: Record<LogLevel, string> = {
+        error: "Error",
+        warning: "Warning",
+        info: "Info",
+      };
+
+      return (
+        <span className={`px-3 py-1 rounded-lg text-xs font-medium ${styles[value]}`}>
+          {labels[value]}
+        </span>
+      );
     },
+  },
     {
       key: "category",
       header: "Category",
