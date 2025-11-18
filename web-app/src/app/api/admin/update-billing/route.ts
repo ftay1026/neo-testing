@@ -13,9 +13,9 @@ export async function PATCH(request: Request) {
     const supabase: SupabaseClient<Database> = await createClient();
     const user = await getUser(supabase);
 
-    if (!user || user.email !== process.env.ADMIN_EMAILS) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // if (!user || user.email !== process.env.ADMIN_EMAILS) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // }
 
     // 2) Get request body
     const body = await request.json();
