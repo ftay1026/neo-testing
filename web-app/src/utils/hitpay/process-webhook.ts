@@ -79,7 +79,7 @@ export class ProcessHitPayWebhook {
         console.log('Updating customer record with user_id...');
         const { error: updateError } = await supabase
           .from('customers')
-          .update({ 
+          .update({
             user_id: userId,
             updated_at: new Date().toISOString()
           })
@@ -92,13 +92,13 @@ export class ProcessHitPayWebhook {
 
       // Calculate credits based on amount
       const amountInCents = Math.round(parseFloat(eventData.amount) * 100);
-      
+
       // Find matching tier by amount
       const matchingTier = HitPayPricingTiers.find(tier => tier.amount === amountInCents);
-      
+
       let creditsPurchased: number;
       let description: string;
-      
+
       if (matchingTier) {
         creditsPurchased = matchingTier.credits;
         description = `HitPay purchase: ${matchingTier.name} (${creditsPurchased} credits) - Payment ID: ${eventData.payment_id}`;
@@ -121,6 +121,27 @@ export class ProcessHitPayWebhook {
         console.error('Failed to add credits:', creditsError);
         throw new Error('Failed to add credits to customer account');
       }
+      // package_transaction query
+      // package_transaction query
+      console.log("📦 Recording package transaction...");
+
+      const { error: packageTxError } = await supabase
+        .from("package_transaction")
+        .insert({
+          transaction_id: crypto.randomUUID(), // Optional — DB will auto-generate if default set
+          customer_id: customerEmail,
+          pricing_tier_id: matchingTier ? matchingTier.id : null, // null if tier not matched
+          payment_id: eventData.payment_id,
+          currency: eventData.currency,
+          created_at: new Date().toISOString()
+        });
+
+      if (packageTxError) {
+        console.error("❌ Failed to insert package_transaction:", packageTxError);
+      }
+
+      console.log("📦 Package transaction recorded successfully.");
+
 
       console.log(`✅ Successfully processed payment ${eventData.payment_id}:`);
       console.log(`   - Email: ${customerEmail}`);
