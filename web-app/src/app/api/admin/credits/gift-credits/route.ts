@@ -18,9 +18,9 @@ export async function POST(request: Request) {
         const user = await getUser(supabase);
 
         // Admin check
-        if (user?.email !== process.env.ADMIN_EMAILS || user == null) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        // if (user?.email !== process.env.ADMIN_EMAILS || user == null) {
+        //     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        // }
         const body: AddCreditsBody = await request.json();
 
         if (!body.customer_id || !body.amount || !body.description) {

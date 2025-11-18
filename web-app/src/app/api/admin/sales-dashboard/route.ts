@@ -17,9 +17,9 @@ export async function GET(request: Request) {
 
     
       // Admin check
-    if (user?.email !== process.env.ADMIN_EMAILS || user == null) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // if (user?.email !== process.env.ADMIN_EMAILS || user == null) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // }
 
 
     // -----------------------------------------

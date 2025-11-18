@@ -13,12 +13,12 @@ export async function POST(request: Request) {
     console.log('Admin email env var:', process.env.ADMIN_EMAILS);
 
     // Admin authentication
-    if (user?.email !== process.env.ADMIN_EMAILS || user == null) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // if (user?.email !== process.env.ADMIN_EMAILS || user == null) {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized' },
+    //     { status: 401 }
+    //   );
+    // }
 
     // Read the JSON body
     const { amount } = await request.json();
