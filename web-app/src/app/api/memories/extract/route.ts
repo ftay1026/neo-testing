@@ -1,8 +1,8 @@
 // src/app/api/memories/extract/route.ts
 import { generateText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
 import { createClient } from '@/utils/supabase/server';
 import { getUser } from '@/utils/supabase/queries';
+import { openai} from '@ai-sdk/openai';
 
 export async function POST(request: Request) {
   try {
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     // Use AI to extract memorable information from the message
     const { text: extractedInfo } = await generateText({
-      model: anthropic('claude-3-5-sonnet-20241022'),
+      model: openai('gpt-4o'),
       temperature: 0.3,
       maxTokens: 300,
       system: `You are helping extract memorable personal information that the user would want their AI assistant to remember for future conversations.
