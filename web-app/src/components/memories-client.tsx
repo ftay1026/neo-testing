@@ -61,14 +61,14 @@ const CATEGORY_ORDER = [
   { key: 'preferences', label: 'Preferences' },
 ] as const;
 
-export function MemoriesClient({ 
-  initialMemories, 
-  user, 
-  MemoryChatId, 
-  projectId, 
-  projectName, 
-  chatTitle, 
-  initialMessages 
+export function MemoriesClient({
+  initialMemories,
+  user,
+  MemoryChatId,
+  projectId,
+  projectName,
+  chatTitle,
+  initialMessages
 }: MemoriesClientProps) {
   const {
     memories,
@@ -90,16 +90,16 @@ export function MemoriesClient({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   // Category collapse states - all open by default
-const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
-  new Set([
-    "writing_style",
-    "goals",
-    "professional",
-    "relationships",
-    "philosophy",
-    "preferences",
-  ])
-);
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
+    new Set([
+      "writing_style",
+      "goals",
+      "professional",
+      "relationships",
+      "philosophy",
+      "preferences",
+    ])
+  );
   const handleCreateMemory = () => {
     setEditingMemory(null);
     setIsDialogOpen(true);
@@ -198,12 +198,13 @@ const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
           selectedVisibilityType="private"
           isReadonly={true}
         />
-        
+
         {/* Header section */}
         <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mx-auto max-w-7xl py-6 px-6">
           <div className="flex h-12 items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col justify-evenly items-center w-72  h-50 ml-25">
+              <div className="flex justify-end w-full items-end">
+              <div className="flex items-center pt-10 gap-2">
                 <BrainIcon className="h-5 w-5 text-muted-foreground" />
                 <h1 className="text-lg font-semibold">Memories</h1>
               </div>
@@ -217,9 +218,12 @@ const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
                   </span>
                 </div>
               )}
+              </div>
 
               {/* Action buttons */}
-              <div className="flex items-center xl:absolute xl:top-27 xl:left-28 gap-2">
+              <div
+                className={`flex justify-end items-end  w-full -mb-10  gap-2`}
+              >
                 {isSelectionMode ? (
                   <>
                     {selectedMemories.length > 0 && (
