@@ -61,14 +61,14 @@ const CATEGORY_ORDER = [
   { key: 'preferences', label: 'Preferences' },
 ] as const;
 
-export function MemoriesClient({
-  initialMemories,
-  user,
-  MemoryChatId,
-  projectId,
-  projectName,
-  chatTitle,
-  initialMessages
+export function MemoriesClient({ 
+  initialMemories, 
+  user, 
+  MemoryChatId, 
+  projectId, 
+  projectName, 
+  chatTitle, 
+  initialMessages 
 }: MemoriesClientProps) {
   const {
     memories,
@@ -90,16 +90,16 @@ export function MemoriesClient({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   // Category collapse states - all open by default
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
-    new Set([
-      "writing_style",
-      "goals",
-      "professional",
-      "relationships",
-      "philosophy",
-      "preferences",
-    ])
-  );
+const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
+  new Set([
+    "writing_style",
+    "goals",
+    "professional",
+    "relationships",
+    "philosophy",
+    "preferences",
+  ])
+);
   const handleCreateMemory = () => {
     setEditingMemory(null);
     setIsDialogOpen(true);
@@ -198,13 +198,12 @@ export function MemoriesClient({
           selectedVisibilityType="private"
           isReadonly={true}
         />
-
-        {/* Header section */}
-        <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mx-auto max-w-7xl py-6 px-6">
+        
+           {/* Header section */}
+        <div className="flex xl:hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mx-auto max-w-7xl py-6 px-6">
           <div className="flex h-12 items-center justify-between">
-            <div className="flex flex-col justify-evenly items-center w-72  h-50 ml-25">
-              <div className="flex justify-end w-full items-end">
-              <div className="flex items-center pt-10 gap-2">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <BrainIcon className="h-5 w-5 text-muted-foreground" />
                 <h1 className="text-lg font-semibold">Memories</h1>
               </div>
@@ -218,12 +217,9 @@ export function MemoriesClient({
                   </span>
                 </div>
               )}
-              </div>
 
               {/* Action buttons */}
-              <div
-                className={`flex justify-end items-end  w-full -mb-10  gap-2`}
-              >
+              <div className="flex items-center gap-2">
                 {isSelectionMode ? (
                   <>
                     {selectedMemories.length > 0 && (
@@ -270,20 +266,46 @@ export function MemoriesClient({
           </div>
         </div>
 
-        <div className='flex flex-1  flex-row justify-center xl:overflow-y-hidden'>
+
+        <div className='flex flex-1 mt-10  flex-row justify-center xl:overflow-y-hidden'>
           {/* Memory Chat */}
           <div className='hidden xl:block w-full min-w-0 max-w-3xl flex-1 overflow-hidden'>
-            <MemoryChat
+              <MemoryChat
               chatId={MemoryChatId}
               projectId={projectId}
               projectName={projectName}
               chatTitle={chatTitle}
               initialMessages={initialMessages}
+              // Pass action button props
+              isSelectionMode={isSelectionMode}
+              setIsSelectionMode={setIsSelectionMode}
+              selectedMemories={selectedMemories}
+              memoriesCount={memories.length}
+              onSelectAll={selectAll}
+              onClearSelection={clearSelection}
+              onDeleteSelected={() => setShowDeleteConfirm(true)}
+              onCreateMemory={handleCreateMemory}
             />
           </div>
 
           {/* Main content - Memory Cards by Category */}
-          <div className='flex-1 mt-12 mb-5 p-1 xl:w-[25%] xl:max-w-96 xl:overflow-y-auto scrollbar-custom'>
+          <div className='flex-1   mb-5 p-1 xl:w-[25%] xl:max-w-96 xl:overflow-y-auto scrollbar-custom'>
+             <div className="hidden xl:flex justify-end w-full items-end mt-2 px-5">
+              <div className="flex items-center  gap-2">
+                <BrainIcon className="h-5 w-5 text-muted-foreground" />
+                <h1 className="text-lg font-semibold">Memories</h1>
+              </div>
+
+              {/* Selection indicator */}
+              {isSelectionMode && selectedMemories.length > 0 && (
+                <div className="flex items-center gap-2 ml-4">
+                  <div className="h-1 w-1 bg-primary rounded-full"></div>
+                  <span className="text-sm text-muted-foreground">
+                    {selectedMemories.length} selected
+                  </span>
+                </div>
+              )}
+              </div>
             {memories.length === 0 ? (
               <MemoriesEmptyState onCreateFirst={handleCreateMemory} />
             ) : (
