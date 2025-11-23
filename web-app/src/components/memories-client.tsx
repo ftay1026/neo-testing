@@ -512,7 +512,7 @@ function MemoryCard({
 
 function MemoriesEmptyState({ onCreateFirst }: { onCreateFirst: () => void }) {
   return (
-    <div className="flex items-center justify-center h-full border flex-1">
+    <div className="flex items-center justify-center h-full border mt-4 flex-1">
       <div className="text-center space-y-6 max-w-sm">
         <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
           <BrainIcon className="w-8 h-8 text-primary" />
