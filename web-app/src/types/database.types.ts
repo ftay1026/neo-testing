@@ -367,6 +367,7 @@ export type Database = {
           created_at: string;           // timestamp with time zone
           currency: string;             // text
           payment_id: string;           // text
+          amount: number;             // numeric
         };
         Insert: {
           transaction_id?: string;
