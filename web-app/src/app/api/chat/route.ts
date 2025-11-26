@@ -115,11 +115,24 @@ export async function POST(request: Request) {
     } = await request.json();
 
     const supabase: SupabaseClient<Database> = await createClient();
-
     const user = await getUser(supabase);
+    console.log(user);
 
-    if (!user?.id) {
+    if (!user?.id || !user?.email) {
       return new Response('Unauthorized', { status: 401 });
+    }
+    const { data, error } = await supabase
+      .from("customers")
+      .select("is_banned")
+      .eq("customer_id", user.email)
+      .single();
+
+    if (error) {
+      console.error('Error checking ban status:', error);
+      return new Response('An error occurred while verifying user status.', { status: 500 });
+    }
+    if (data?.is_banned) {
+      return new Response('Your account is temporarily suspended. If you believe this is a mistake, contact support at info@felixtay.com.', { status: 403 });
     }
 
     // Get customer ID and check credits

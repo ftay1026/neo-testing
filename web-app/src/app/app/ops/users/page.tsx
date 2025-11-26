@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useAddCredits } from "@/hooks/admin/use-credits";
 import { useBulkGiftCredits } from "@/hooks/admin/use-bulk-gift";
 import GiftCreditsModal from "@/components/dashborad/GiftCreditsModal";
+import BanUserModal from "@/components/dashborad/BanUserModel";
 
 export default function UsersPage() {
     const {
@@ -21,6 +22,7 @@ export default function UsersPage() {
         loading,
         banUser,
         unbanUser,
+        getTotalSpend,
     } = useCustomers();
     const { addCredits, loading: gifting } = useAddCredits();
     const { bulkGift, loading: bulkGifting } = useBulkGiftCredits();
@@ -28,8 +30,27 @@ export default function UsersPage() {
     const [searchQuery, setSearchQuery] = useState(search);
     const [giftModalOpen, setGiftModalOpen] = useState(false);
     const [bulkGiftModalOpen, setBulkGiftModalOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<{ id: string; name: string } | null>(null);
+    const [banModalOpen, setBanModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<{ 
+        id: string; 
+        name: string; 
+        email: string;
+    } | null>(null);
+    const [userTotalSpend, setUserTotalSpend] = useState<number | null>(null);
+    const [loadingSpend, setLoadingSpend] = useState(false);
     const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
+    const [adminEmail, setAdminEmail] = useState("");
+
+    // Get admin email on mount
+    useEffect(() => {
+        // You can fetch this from your auth context or user session
+        // For now using a placeholder
+        const fetchAdminEmail = async () => {
+            // Replace with actual admin email fetching logic
+            setAdminEmail("admin@neo.com");
+        };
+        fetchAdminEmail();
+    }, []);
 
     // Debounce search input
     useEffect(() => {
@@ -67,13 +88,34 @@ export default function UsersPage() {
         }
     };
 
-    // Handle ban user with loading state
-    const handleBanUser = async (userId: string) => {
-        setActionLoading((prev) => ({ ...prev, [`ban-${userId}`]: true }));
+    // Open ban modal and fetch total spend
+    const handleOpenBanModal = async (userId: string, userName: string, userEmail: string) => {
+        setSelectedUser({ id: userId, name: userName, email: userEmail });
+        setBanModalOpen(true);
+        setLoadingSpend(true);
+        
+        const spend = await getTotalSpend(userId);
+        setUserTotalSpend(spend);
+        setLoadingSpend(false);
+    };
+
+    // Handle ban user with reason
+    const handleBanUser = async (reason: string, bannedBy: string) => {
+        if (!selectedUser) return;
+
+        setActionLoading((prev) => ({ ...prev, [`ban-${selectedUser.id}`]: true }));
         try {
-            await banUser(userId);
+            const success = await banUser(selectedUser.id, reason, bannedBy);
+            if (success) {
+                alert(`Successfully banned ${selectedUser.name}`);
+                setBanModalOpen(false);
+                setSelectedUser(null);
+                setUserTotalSpend(null);
+            } else {
+                alert("Failed to ban user. Please try again.");
+            }
         } finally {
-            setActionLoading((prev) => ({ ...prev, [`ban-${userId}`]: false }));
+            setActionLoading((prev) => ({ ...prev, [`ban-${selectedUser.id}`]: false }));
         }
     };
 
@@ -143,21 +185,12 @@ export default function UsersPage() {
                     <div className="flex gap-2">
                         {row.status === "active" ? (
                             <button
-                                onClick={() => handleBanUser(row.id)}
+                                onClick={() => handleOpenBanModal(row.id, row.name, row.email)}
                                 disabled={isBanLoading}
                                 className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm transition-colors disabled:opacity-50 min-w-[100px] justify-center"
                             >
-                                {isBanLoading ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Banning...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Ban className="w-4 h-4" />
-                                        Ban
-                                    </>
-                                )}
+                                <Ban className="w-4 h-4" />
+                                Ban
                             </button>
                         ) : (
                             <button
@@ -180,7 +213,7 @@ export default function UsersPage() {
                         )}
                         <button
                             onClick={() => {
-                                setSelectedUser({ id: row.id, name: row.name });
+                                setSelectedUser({ id: row.id, name: row.name, email: row.email });
                                 setGiftModalOpen(true);
                             }}
                             disabled={gifting}
@@ -291,6 +324,22 @@ export default function UsersPage() {
                 loading={bulkGifting}
                 isBulk={true}
                 userCount={total}
+            />
+
+            {/* Ban User Modal */}
+            <BanUserModal
+                isOpen={banModalOpen}
+                onClose={() => {
+                    setBanModalOpen(false);
+                    setSelectedUser(null);
+                    setUserTotalSpend(null);
+                }}
+                onConfirm={handleBanUser}
+                userName={selectedUser?.name || ""}
+                adminEmail={adminEmail}
+                totalSpend={userTotalSpend}
+                loading={actionLoading[`ban-${selectedUser?.id}`] || false}
+                loadingSpend={loadingSpend}
             />
         </div>
     );

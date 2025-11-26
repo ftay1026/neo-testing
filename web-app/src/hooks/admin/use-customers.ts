@@ -26,8 +26,9 @@ interface UseCustomersReturn {
   setLimit: (v: number) => void;
   setOffset: (v: number) => void;
   refetch: () => Promise<void>;
-  banUser: (customerId: string) => Promise<void>;
+  banUser: (customerId: string, banReason?: string, bannedBy?: string) => Promise<boolean>;
   unbanUser: (customerId: string) => Promise<void>;
+  getTotalSpend: (customerId: string) => Promise<number | null>;
 }
 
 // =====================================================
@@ -83,31 +84,60 @@ export function useCustomers(): UseCustomersReturn {
   }, [fetchCustomers]);
 
   // ================================
-  // Ban user
+  // Get total spend
   // ================================
-  const banUser = useCallback(async (customerId: string) => {
+  const getTotalSpend = async (customerId: string): Promise<number | null> => {
     try {
-
-        console.log('Banning customer:', customerId)
-      const response = await fetch('/api/admin/customers/status', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customer_id: customerId, action: 'ban' }),
+      const response = await fetch('/api/admin/customers/total-spend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ customer_id: customerId }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to ban user');
+        throw new Error('Failed to fetch total spend');
       }
 
-      // Refetch updated list
-      await fetchCustomers();
-    } catch (err) {
-      console.error('Error banning user:', err);
-      alert(err instanceof Error ? err : 'Failed to ban user');
+      const data = await response.json();
+      return data.total_spend;
+    } catch (error) {
+      console.error('Error fetching total spend:', error);
+      return null;
     }
-  }, [fetchCustomers]);
+  };
+
+  // ================================
+  // Ban user
+  // ================================
+  const banUser = async (customerId: string, banReason?: string, bannedBy?: string) => {
+    try {
+      const response = await fetch('/api/admin/customers/status', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          action: 'ban',
+          ban_reason: banReason,
+          banned_by: bannedBy,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to ban user');
+      }
+
+      // Refresh the customer list
+      await fetchCustomers();
+      return true;
+    } catch (error) {
+      console.error('Error banning user:', error);
+      return false;
+    }
+  };
 
   // ================================
   // Unban user
@@ -148,5 +178,6 @@ export function useCustomers(): UseCustomersReturn {
     refetch: fetchCustomers,
     banUser,
     unbanUser,
+    getTotalSpend
   };
 }
