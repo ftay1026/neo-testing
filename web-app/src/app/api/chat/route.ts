@@ -186,6 +186,8 @@ export async function POST(request: Request) {
       redisCreditTracker.getPendingCredits(customerId)
     ]);
 
+    console.log('Credit record from DB:', creditRecord);
+
     const dbBalance = creditRecord.data || 0;
     const actualBalance = dbBalance - pendingDeductions;
 

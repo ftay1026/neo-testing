@@ -1183,6 +1183,26 @@ export type Database = {
         }
         Returns: boolean
       }
+       get_grace_period_data: {
+        Args: {
+          p_customer_id: string
+        }
+        Returns: {
+          has_grace_credits: boolean
+          total_credits: number
+          min_days_remaining: number
+          batch_count: number
+          batches: Array<{
+            id: string
+            remaining_credits: number
+            description: string
+            created_at: string
+            expires_at: string
+            grace_period_ends_at: string
+            days_remaining: number
+          }>
+        }
+      }
       get_expiring_credits: {
         Args: { p_days_threshold?: number }
         Returns: {

@@ -14,6 +14,8 @@ import { VisibilityType } from '@/types/app.types';
 import HeaderAuthClient from '@/components/header-auth-client';
 import { CreditsNavItem } from './credits-nav-item';
 import { getProjectDisplayName } from '@/lib/utils';
+import { ExpiringCreditsBanner } from './credit-expiring-banner';
+
 
 function PureChatHeader({
   chatId,
@@ -46,6 +48,10 @@ function PureChatHeader({
     <header className="flex sticky top-0 bg-background py-1.5 items-center px-2 md:px-2 gap-2">
       <SidebarToggle />
 
+      <div className='max-w-full mx-auto w-full '>
+
+      <ExpiringCreditsBanner/>
+      </div>
       {/* Project name and chat title display */}
       {displayProjectName && projectId && (
         <div className="order-3 md:order-2 me-auto items-center gap-2 flex min-w-0 flex-1 md:flex-initial">
