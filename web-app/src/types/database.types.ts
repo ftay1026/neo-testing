@@ -1170,6 +1170,19 @@ export type Database = {
         Args: { p_customer_id: string; p_required_credits: number }
         Returns: boolean
       }
+       get_available_credits: {
+        Args: {
+          p_customer_id: string
+        }
+        Returns: number
+      }
+      deduct_credits: {
+        Args: {
+          p_customer_id: string
+          p_amount_to_deduct: number
+        }
+        Returns: boolean
+      }
       get_expiring_credits: {
         Args: { p_days_threshold?: number }
         Returns: {

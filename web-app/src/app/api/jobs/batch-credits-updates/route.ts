@@ -10,12 +10,12 @@ export const dynamic = 'force-dynamic';
 function isValidCronRequest(request: Request): boolean {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
-  
+
   if (!cronSecret) {
     console.error('⚠️ CRON_SECRET not configured');
     return false;
   }
-  
+
   return authHeader === `Bearer ${cronSecret}`;
 }
 
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
     // 2. Get all usage records from Redis
     const records = await redisCreditTracker.getAllUsageRecords();
-    
+
     if (records.length === 0) {
       console.log('✅ No pending records to sync');
       return Response.json({
@@ -69,16 +69,16 @@ export async function GET(request: Request) {
       try {
         // Calculate total credits for this customer
         const totalCredits = customerRecords.reduce(
-          (sum, r) => sum + r.actualCreditsUsed, 
+          (sum, r) => sum + r.actualCreditsUsed,
           0
         );
 
         // Single database operation per customer
-        const { error: dbError } = await supabaseAdmin.rpc('add_credits', {
-          p_customer_id: customerId,
-          p_amount: -totalCredits, // Negative for deduction
-          p_description: `Batch credit usage: ${customerRecords.length} messages (${totalCredits} credits)`
-        });
+        const { error: dbError } = await supabaseAdmin
+          .rpc('deduct_credits', {
+            p_customer_id: customerId,
+            p_amount_to_deduct: totalCredits
+          });
 
         if (dbError) {
           throw dbError;
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
 
         // Delete processed records from Redis
         await redisCreditTracker.deleteUsageRecords(customerRecords);
-        
+
         totalProcessed += customerRecords.length;
         console.log(`✅ Synced ${customerRecords.length} records for ${customerId} (${totalCredits} credits)`);
 
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
 
     console.log(`✅ Credit sync completed in ${duration}ms`);
     console.log(`📊 Processed: ${totalProcessed}/${records.length} records`);
-    
+
     if (errors.length > 0) {
       console.error(`⚠️ ${errors.length} customers had errors`);
     }
