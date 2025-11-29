@@ -179,16 +179,14 @@ export async function POST(request: Request) {
     // }
 
     // ✅ NEW CODE: Parallel fetch of DB balance + Redis pending
+    // Frontend check (before Redis deduction)
     const [creditRecord, pendingDeductions] = await Promise.all([
       supabaseAdmin
-        .from('credits')
-        .select('credits')
-        .eq('customer_id', customerId)
-        .maybeSingle(),
+        .rpc('get_available_credits', { p_customer_id: customerId }),
       redisCreditTracker.getPendingCredits(customerId)
     ]);
 
-    const dbBalance = creditRecord.data?.credits ?? 0;
+    const dbBalance = creditRecord.data || 0;
     const actualBalance = dbBalance - pendingDeductions;
 
     // Check actual balance (including pending)

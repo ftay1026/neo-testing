@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/jobs/batch-credits-updates",
-      "schedule": "0 */2 * * *"
+      "schedule": "*/1 * * * *"
     }
   ]
 }
