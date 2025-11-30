@@ -109,7 +109,7 @@ export function ProjectsClient({ initialProjects, user }: ProjectsClientProps) {
 
         {/* Header section */}
         <div className="">
-        <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mx-auto max-w-7xl py-6 px-6">
+        <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 mx-auto max-w-7xl py-6 px-6">
           <div className="flex h-12 items-center justify-between">
             <div className="flex items-center gap-2">
               <FolderIcon className="h-5 w-5 text-muted-foreground" />

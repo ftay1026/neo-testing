@@ -21,7 +21,7 @@ export default async function CreditsPage() {
         </div>
         <HeaderAuth />
       </nav>
-        
+      
       <section className="w-full max-w-7xl mx-auto flex-1 flex items-center justify-center py-16 md:py-24 bg-background">
         <div className="container px-4 sm:px-6 lg:px-8">
           <Credits />
