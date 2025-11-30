@@ -102,7 +102,7 @@ export function ExpiringCreditsBanner() {
                 Close
               </button>
               <button
-                onClick={() => (window.location.href = '/credits/purchase')}
+                onClick={() => (window.location.href = '/app/credits/purchase')}
                 className="px-3 py-1 bg-gray-800 rounded-sm text-sm hover:bg-gray-700 transition-colors"
               >
                 Purchase More
